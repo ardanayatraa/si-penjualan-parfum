@@ -26,16 +26,16 @@ class TransaksiPenjualanTable extends DataTableComponent
                 ->sortable(),
             Column::make("Tanggal transaksi", "tanggal_transaksi")
                 ->sortable(),
-            Column::make("Nama barang", "nama_barang")
-                ->sortable(),
             Column::make("Jumlah", "jumlah")
                 ->sortable(),
-            Column::make("Harga barang", "harga_barang")
+            Column::make("Harga Jual", "harga_jual")
                 ->sortable(),
             Column::make("Total harga", "total_harga")
                 ->sortable(),
             Column::make("Total nilai transaksi", "total_nilai_transaksi")
                 ->sortable(),
+
+
             Column::make("Laba bruto", "laba_bruto")
                 ->sortable(),
             Column::make("Laba bersih", "laba_bersih")

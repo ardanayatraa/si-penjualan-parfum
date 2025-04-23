@@ -11,13 +11,12 @@ class Create extends Component
 {
     public $open = false;
 
-    public $id_barang, $tanggal_transaksi, $nama_barang, $jumlah, $harga_barang, $total_harga, $total_nilai_transaksi, $laba_bruto, $laba_bersih, $keterangan;
-    public $harga_beli,$nama_user,$harga_jual;
+    public $id_barang, $tanggal_transaksi, $jumlah, $harga_jual, $total_harga, $total_nilai_transaksi, $laba_bruto, $laba_bersih, $keterangan;
+    public $harga_beli,$nama_user;
 
     protected $rules = [
         'id_barang' => 'required|integer',
         'tanggal_transaksi' => 'required|date',
-        'nama_barang' => 'required|string',
         'jumlah' => 'required|numeric|min:1',
         'total_harga' => 'required|numeric|min:0',
         'total_nilai_transaksi' => 'required|numeric|min:0',
@@ -35,8 +34,6 @@ class Create extends Component
         $barang = Barang::find($this->id_barang);
 
         if ($barang) {
-            $this->nama_barang = $barang->nama_barang;
-            $this->harga_barang = $barang->harga_beli;
             $this->harga_jual = $barang->harga_jual;
             $this->harga_beli = $barang->harga_beli;
             $this->hitungTotal();
@@ -65,9 +62,9 @@ class Create extends Component
             'id_kasir' => Auth::id(),
             'id_barang' => $this->id_barang,
             'tanggal_transaksi' => $this->tanggal_transaksi,
-            'nama_barang' => $this->nama_barang,
+
             'jumlah' => $this->jumlah,
-            'harga_barang' => $this->harga_barang,
+            'harga_jual' => $this->harga_jual,
             'total_harga' => $this->total_harga,
             'total_nilai_transaksi' => $this->total_nilai_transaksi,
             'laba_bruto' => $this->laba_bruto,
@@ -77,7 +74,7 @@ class Create extends Component
 
         $this->dispatch('refreshDatatable');
         $this->reset([
-            'id_barang', 'tanggal_transaksi', 'nama_barang', 'jumlah', 'harga_barang',
+            'id_barang', 'tanggal_transaksi', 'jumlah', 'harga_jual',
             'total_harga', 'total_nilai_transaksi', 'laba_bruto', 'laba_bersih', 'keterangan'
         ]);
         $this->open = false;

@@ -7,18 +7,24 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
-        Schema::create('pajak_transaksi', function (Blueprint $table) {
+        Schema::create('transaksi_penjualan', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_transaksi')->constrained('transaksi_penjualans')->onDelete('cascade');
-            $table->enum('jenis_transaksi', ['penjualan', 'pembelian']);
-            $table->decimal('persentase_pajak', 5, 2);
-            $table->decimal('nilai_pajak', 15, 2);
+            $table->foreignId('id_kasir');
+            $table->foreignId('id_barang');
+            $table->date('tanggal_transaksi');
+            $table->string('jumlah', 15);
+            $table->string('harga_jual', 10);
+            $table->string('total_harga', 10);
+            $table->integer('total_nilai_transaksi');
+            $table->integer('laba_bruto');
+            $table->integer('laba_bersih');
+            $table->text('keterangan')->nullable();
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('pajak_transaksi');
+        Schema::dropIfExists('transaksi_penjualan');
     }
 };

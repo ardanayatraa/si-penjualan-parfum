@@ -9,14 +9,13 @@ use App\Models\User;
 class TransaksiPenjualan extends Model
 {
     use HasFactory;
-
+    protected $table='transaksi_penjualan';
     protected $fillable = [
         'id_kasir',
         'id_barang',
         'tanggal_transaksi',
-        'nama_barang',
         'jumlah',
-        'harga_barang',
+        'harga_jual',
         'total_harga',
         'total_nilai_transaksi',
         'laba_bruto',

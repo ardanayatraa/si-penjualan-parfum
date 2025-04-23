@@ -26,8 +26,6 @@ class TransaksiPembelianTable extends DataTableComponent
                 ->sortable(),
             Column::make("Tanggal", "tanggal")
                 ->sortable(),
-            Column::make("Nama barang", "nama_barang")
-                ->sortable(),
             Column::make("Harga beli", "harga_beli")
                 ->sortable(),
             Column::make("Jumlah", "jumlah")

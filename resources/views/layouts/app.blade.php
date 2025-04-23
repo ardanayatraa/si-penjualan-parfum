@@ -20,17 +20,42 @@
 
     <!-- Styles -->
     @livewireStyles
+    <style>
+        @media (max-width: 767px) {
+            #sidebar {
+                background-color: rgb(255, 237, 213) !important;
+                /* Solid orange-100 color */
+            }
+        }
+
+        /* Active menu item styles */
+        .sidebar-active {
+            background-color: #FFEDD5 !important;
+            /* orange-200 */
+            border-left: 4px solid #F97316 !important;
+            /* orange-500 */
+            font-weight: 600 !important;
+            color: #C2410C !important;
+            /* orange-700 */
+        }
+
+        /* Adjust padding for active items to account for border */
+        .sidebar-active {
+            padding-left: 10px !important;
+        }
+    </style>
+    @stack('head')
 </head>
 
 <body class="bg-gray-50">
     <div>
         <!-- Sidebar -->
         <aside id="sidebar"
-            class="fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            class="fixed inset-y-0 left-0 z-50 w-64 bg-orange-100 md:bg-orange-100 border-r border-orange-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-lg">
             <div class="flex flex-col h-full">
                 <!-- Logo -->
-                <div class="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-                    <div class="flex items-center">
+                <div class="flex items-center justify-between h-16 px-4 border-b border-orange-200 bg-orange-50">
+                    <div class="flex items-center space-x-2">
                         <svg class="w-8 h-8 text-orange-500" viewBox="0 0 24 24" fill="none"
                             xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
@@ -39,11 +64,11 @@
                             <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" />
                         </svg>
-                        <span class="ml-2 text-lg font-semibold">Penjualan Parfum</span>
+                        <span class="text-lg font-bold text-orange-700">GRIYA PARFUM</span>
                     </div>
-                    <button id="closeSidebarBtn" class="p-1 rounded-md md:hidden hover:bg-sidebar-accent">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
+                    <button id="closeSidebarBtn" class="p-1 rounded-md md:hidden hover:bg-orange-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-600" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -51,88 +76,128 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="flex-1 px-2 py-4 overflow-y-auto">
-                    <div class="space-y-1">
+                <nav class="flex-1 px-3 py-4 overflow-y-auto text-orange-800">
+                    <div class="space-y-2">
                         <a href="{{ route('dashboard') }}"
-                            class="flex items-center px-3 py-2.5 text-sm font-medium rounded-md group transition-all {{ activeSidebar('dashboard') }}">
+                            class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('dashboard') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i>
                             <span>Dashboard</span>
                         </a>
+                        {{-- Menu untuk ADMIN --}}
+                        @if (auth()->user()->level === 'admin')
+                            <a href="{{ route('barang') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('barang') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-box w-5 h-5 mr-3"></i>
+                                <span>Barang</span>
+                            </a>
 
-                        <!-- Inventory Management -->
-                        <div class="pt-4">
-                            <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Inventory
-                            </h3>
-                            <div class="mt-2 space-y-1">
-                                <a href="{{ route('barang') }}"
-                                    class="flex items-center px-3 py-2.5 text-sm font-medium rounded-md group transition-all {{ activeSidebar('barang') }}">
-                                    <i class="fas fa-box w-5 h-5 mr-3"></i>
-                                    <span>Barang</span>
-                                </a>
+                            <a href="{{ route('supplier') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('supplier') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-truck w-5 h-5 mr-3"></i>
+                                <span>Supplier</span>
+                            </a>
 
-                                <a href="{{ route('supplier') }}"
-                                    class="flex items-center px-3 py-2.5 text-sm font-medium rounded-md group transition-all {{ activeSidebar('supplier') }}">
-                                    <i class="fas fa-truck w-5 h-5 mr-3"></i>
-                                    <span>Supplier</span>
-                                </a>
-                            </div>
-                        </div>
+                            <a href="{{ route('transaksi-pembelian') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('transaksi-pembelian') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-shopping-cart w-5 h-5 mr-3"></i>
+                                <span>Transaksi Pembelian</span>
+                            </a>
 
-                        <!-- Transactions -->
-                        <div class="pt-4">
-                            <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Transaksi
-                            </h3>
-                            <div class="mt-2 space-y-1">
-                                <a href="{{ route('transaksi-pembelian') }}"
-                                    class="flex items-center px-3 py-2.5 text-sm font-medium rounded-md group transition-all {{ activeSidebar('transaksi-pembelian') }}">
-                                    <i class="fas fa-shopping-cart w-5 h-5 mr-3"></i>
-                                    <span>Transaksi Pembelian</span>
-                                </a>
-                                <a href="{{ route('transaksi-penjualan') }}"
-                                    class="flex items-center px-3 py-2.5 text-sm font-medium rounded-md group transition-all {{ activeSidebar('transaksi-penjualan') }}">
-                                    <i class="fas fa-cash-register w-5 h-5 mr-3"></i>
-                                    <span>Transaksi Penjualan</span>
-                                </a>
-                                <a href="{{ route('pajak-transaksi') }}"
-                                    class="flex items-center px-3 py-2.5 text-sm font-medium rounded-md group transition-all {{ activeSidebar('pajak-transaksi') }}">
-                                    <i class="fas fa-receipt w-5 h-5 mr-3"></i>
-                                    <span>Pajak Transaksi</span>
-                                </a>
-                            </div>
-                        </div>
+                            <a href="{{ route('transaksi-penjualan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('transaksi-penjualan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-cash-register w-5 h-5 mr-3"></i>
+                                <span>Transaksi Penjualan</span>
+                            </a>
 
-                        <!-- Administration -->
-                        <div class="pt-4">
-                            <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Administrasi
-                            </h3>
-                            <div class="mt-2 space-y-1">
-                                <a href="{{ route('user') }}"
-                                    class="flex items-center px-3 py-2.5 text-sm font-medium rounded-md group transition-all {{ activeSidebar('user.*') }}">
-                                    <i class="fas fa-users w-5 h-5 mr-3"></i>
-                                    <span>User</span>
-                                </a>
+                            <a href="{{ route('pajak-transaksi') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('pajak-transaksi') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-receipt w-5 h-5 mr-3"></i>
+                                <span>Pajak Transaksi</span>
+                            </a>
 
-                            </div>
-                        </div>
+                            <a href="{{ route('user') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('user') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                                <span>User</span>
+                            </a>
+
+                            <a href="{{ route('laporan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('laporan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
+                                <span>Laporan</span>
+                            </a>
+
+                            <a href="{{ route('grafik.penjualan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('grafik.penjualan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                                <span>Grafik Penjualan</span>
+                            </a>
+                        @endif
+
+                        {{-- Menu untuk KASIR --}}
+                        @if (auth()->user()->level === 'kasir')
+                            <a href="{{ route('transaksi-pembelian') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('transaksi-pembelian') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-shopping-cart w-5 h-5 mr-3"></i>
+                                <span>Transaksi Pembelian</span>
+                            </a>
+
+                            <a href="{{ route('transaksi-penjualan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('transaksi-penjualan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-cash-register w-5 h-5 mr-3"></i>
+                                <span>Transaksi Penjualan</span>
+                            </a>
+
+                            <a href="{{ route('laporan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('laporan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
+                                <span>Laporan</span>
+                            </a>
+
+                            <a href="{{ route('grafik.penjualan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('grafik.penjualan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                                <span>Grafik Penjualan</span>
+                            </a>
+                        @endif
+
+                        {{-- Menu untuk PEMILIK --}}
+                        @if (auth()->user()->level === 'pemilik')
+                            <a href="{{ route('laporan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('laporan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
+                                <span>Laporan</span>
+                            </a>
+
+                            <a href="{{ route('grafik.penjualan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('grafik.penjualan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                                <span>Grafik Penjualan</span>
+                            </a>
+                        @endif
+
                     </div>
                 </nav>
 
-
-                <!-- User Profile -->
-                <div class="p-4 border-t border-sidebar-border">
-                    <div class="flex items-center">
-                        <img class="h-9 w-9 rounded-full object-cover"
-                            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                            alt="User avatar">
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-sidebar-foreground">Admin User</p>
-                            <p class="text-xs text-gray-500">Administrator</p>
-                        </div>
+                <!-- Tombol Logout -->
+                <div class="p-4 border-t border-orange-200 bg-orange-50">
+                    <div class="flex items-center px-3 py-2 rounded-md hover:bg-orange-100 transition text-sm text-orange-700 font-medium cursor-pointer"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        <svg class="w-5 h-5 mr-2 text-orange-700" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+                        </svg>
+                        Keluar
                     </div>
+
+                    <!-- Form logout tersembunyi -->
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                        @csrf
+                    </form>
                 </div>
+
+
             </div>
         </aside>
 
@@ -159,22 +224,20 @@
                                 class="flex items-center max-w-xs text-sm bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
                                 <span class="sr-only">Open user menu</span>
                                 <img class="h-8 w-8 rounded-full"
-                                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                                    src="https://ui-avatars.com/api/?name=Admin+User&background=FFEDD5&color=DC2626&size=256"
                                     alt="User avatar">
                             </button>
 
-                            <!-- Dropdown menu -->
+                            <!-- Dropdown menu kosong (kalau mau isi info user atau lainnya nanti) -->
                             <div id="profileDropdown"
                                 class="absolute right-0 w-48 py-1 mt-2 bg-white rounded-md shadow-lg hidden ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                                <a href="#"
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
-                                <a href="#"
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pengaturan</a>
-                                <a href="#"
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Keluar</a>
+                                <div class="block px-4 py-2 text-sm text-gray-500">
+                                    Logged in as {{ auth()->user()->username }}
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </header>
 
@@ -240,10 +303,12 @@
     @stack('modals')
     <!-- Adds the Core Table Scripts -->
     @rappasoftTableScripts
-
+    @stack('scripts')
     <!-- Adds any relevant Third-Party Scripts (e.g. Flatpickr) -->
     @rappasoftTableThirdPartyScripts
     @livewireScripts
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </body>
 
 </html>

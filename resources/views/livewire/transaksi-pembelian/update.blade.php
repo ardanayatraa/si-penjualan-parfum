@@ -6,10 +6,10 @@
             <div class="flex flex-col gap-4">
                 <div>
                     <x-label value="Barang" />
-                    <select wire:model="id_barang" class="w-full border-gray-300 rounded-md">
+                    <select wire:model.live="id_barang" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Barang --</option>
                         @foreach ($listBarang as $barang)
-                            <option value="{{ $barang->id_barang }}">{{ $barang->nama_barang }}</option>
+                            <option value="{{ $barang->id }}">{{ $barang->nama_barang }}</option>
                         @endforeach
                     </select>
                     @error('id_barang')
@@ -38,18 +38,11 @@
                     @enderror
                 </div>
 
-                <div>
-                    <x-label value="Nama Barang" />
-                    <x-input wire:model="nama_barang" />
-                    @error('nama_barang')
-                        <span class="text-red-500 text-sm">{{ $message }}</span>
-                    @enderror
-                </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <x-label value="Harga Beli" />
-                        <x-input type="number" wire:model="harga_beli" />
+                        <x-input type="number" wire:model="harga_beli" readonly />
                         @error('harga_beli')
                             <span class="text-red-500 text-sm">{{ $message }}</span>
                         @enderror
@@ -57,7 +50,7 @@
 
                     <div>
                         <x-label value="Jumlah" />
-                        <x-input type="number" wire:model="jumlah" />
+                        <x-input type="number" wire:model.live="jumlah" />
                         @error('jumlah')
                             <span class="text-red-500 text-sm">{{ $message }}</span>
                         @enderror

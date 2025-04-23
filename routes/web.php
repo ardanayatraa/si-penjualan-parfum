@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BarangController;
+use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransaksiPembelianController;
 use App\Http\Controllers\TransaksiPenjualanController;
@@ -19,7 +20,7 @@ use App\Http\Controllers\UserController;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.login');
 });
 
 Route::middleware([
@@ -57,4 +58,11 @@ Route::middleware([
         return view('page.laporan');
     })->name('laporan');
 
+    Route::get('/laporan/cetak', [LaporanController::class, 'print'])->name('laporan.print');
+
+    Route::get('/grafik-penjualan', [\App\Http\Controllers\GrafikPenjualanController::class, 'index'])->name('grafik.penjualan');
+    Route::get('/grafik-penjualan/profit', [\App\Http\Controllers\GrafikPenjualanController::class, 'grafikProfit']);
+    Route::get('/grafik-penjualan/produk-terlaris', [\App\Http\Controllers\GrafikPenjualanController::class, 'grafikProdukTerlaris']);
+
 });
+

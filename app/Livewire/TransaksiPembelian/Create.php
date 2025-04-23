@@ -19,7 +19,6 @@ class Create extends Component
         'id_supplier' => 'required|integer',
         'tanggal' => 'required|date',
         'jumlah' => 'required|numeric|min:1',
-        'nama_barang' => 'required|string',
         'harga_beli' => 'required|numeric|min:0',
         'total_harga_beli' => 'required|numeric|min:0',
         'total_nilai_transaksi' => 'required|numeric|min:0',
@@ -28,10 +27,9 @@ class Create extends Component
 
     public function updatedIdBarang()
     {
-        $barang = Barang::find($this->id);
+        $barang = Barang::find($this->id_barang);
 
         if ($barang) {
-            $this->nama_barang = $barang->nama_barang;
             $this->harga_beli = $barang->harga_beli;
             $this->hitungTotal();
         }
@@ -56,7 +54,6 @@ class Create extends Component
             'id_barang' => $this->id_barang,
             'id_supplier' => $this->id_supplier,
             'tanggal' => $this->tanggal,
-            'nama_barang' => $this->nama_barang,
             'harga_beli' => $this->harga_beli,
             'jumlah' => $this->jumlah,
             'total_harga_beli' => $this->total_harga_beli,
@@ -65,7 +62,7 @@ class Create extends Component
         ]);
 
         $this->dispatch('refreshDatatable');
-        $this->reset(['id_barang', 'id_supplier', 'tanggal', 'jumlah', 'nama_barang', 'harga_beli', 'total_harga_beli', 'total_nilai_transaksi', 'keterangan']);
+        $this->reset(['id_barang', 'id_supplier', 'tanggal', 'jumlah', 'harga_beli', 'total_harga_beli', 'total_nilai_transaksi', 'keterangan']);
         $this->open = false;
     }
 

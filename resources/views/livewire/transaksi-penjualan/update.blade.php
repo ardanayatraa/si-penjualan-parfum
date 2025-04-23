@@ -26,13 +26,6 @@
                     @enderror
                 </div>
 
-                <div>
-                    <x-label value="Nama Barang" />
-                    <x-input wire:model="nama_barang" />
-                    @error('nama_barang')
-                        <span class="text-red-500 text-sm">{{ $message }}</span>
-                    @enderror
-                </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>

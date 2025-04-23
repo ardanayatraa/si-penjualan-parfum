@@ -13,7 +13,7 @@ class Update extends Component
     public $open = false;
     public $transaksi_id;
 
-    public $id_barang, $id_supplier, $tanggal, $nama_barang, $harga_beli, $jumlah, $total_harga_beli, $total_nilai_transaksi, $keterangan;
+    public $id_barang, $id_supplier, $tanggal,  $harga_beli, $jumlah, $total_harga_beli, $total_nilai_transaksi, $keterangan;
 
     protected $listeners = ['edit' => 'loadData'];
 
@@ -21,7 +21,6 @@ class Update extends Component
         'id_barang' => 'required|integer',
         'id_supplier' => 'required|integer',
         'tanggal' => 'required|date',
-        'nama_barang' => 'required|string|max:255',
         'harga_beli' => 'required|numeric|min:0',
         'jumlah' => 'required|numeric|min:1',
         'total_harga_beli' => 'required|numeric|min:0',
@@ -37,7 +36,6 @@ class Update extends Component
         $this->id_barang = $transaksi->id_barang;
         $this->id_supplier = $transaksi->id_supplier;
         $this->tanggal = $transaksi->tanggal;
-        $this->nama_barang = $transaksi->nama_barang;
         $this->harga_beli = $transaksi->harga_beli;
         $this->jumlah = $transaksi->jumlah;
         $this->total_harga_beli = $transaksi->total_harga_beli;

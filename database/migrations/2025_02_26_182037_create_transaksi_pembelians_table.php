@@ -12,7 +12,6 @@ return new class extends Migration {
             $table->foreignId('id_barang');
             $table->foreignId('id_supplier');
             $table->date('tanggal');
-            $table->string('nama_barang', 20);
             $table->integer('harga_beli');
             $table->integer('jumlah');
             $table->integer('total_harga_beli');
