@@ -15,11 +15,12 @@ class Create extends Component
 
     protected $rules = [
         'id_barang'           => 'required|exists:barang,id',
-        'id_supplier'         => 'required|exists:suppliers,id',
+        'id_supplier'         => 'required|exists:supplier,id_supplier',
         'tanggal_transaksi'   => 'required|date',
         'jumlah_pembelian'    => 'required|integer|min:1',
         // total dihitung otomatis
     ];
+
 
     public function updatedIdBarang()
     {

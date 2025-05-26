@@ -28,12 +28,10 @@ class TransaksiPembelianTable extends DataTableComponent
                 ->sortable(),
 
             Column::make('Barang', 'barang.nama_barang')
-                ->sortable()
-                ->format(fn($value, $row) => $row->barang->nama_barang),
+                ->sortable(),
 
-            Column::make('Supplier', 'supplier.nama')
-                ->sortable()
-                ->format(fn($value, $row) => $row->supplier->nama),
+            Column::make('Supplier', 'supplier.nama_supplier')
+                ->sortable(),
 
             Column::make('Tanggal Transaksi', 'tanggal_transaksi')
                 ->sortable()

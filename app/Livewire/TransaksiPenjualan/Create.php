@@ -11,42 +11,62 @@ use Illuminate\Support\Facades\Auth;
 class Create extends Component
 {
     public $open = false;
-    public $id_barang, $id_pajak, $tanggal_transaksi, $subtotal = 0;
-    public $harga_pokok = 0, $laba_bruto = 0, $total_harga = 0;
+
+    // Input fields
+    public $id_barang;
+    public $jumlah_penjualan = 1;
+    public $tanggal_transaksi;
+    public $id_pajak;
+
+    // Lookup values
+    public $harga_jual  = 0;
+    public $harga_pokok = 0;
+
+    // Computed
+    public $subtotal    = 0;
+    public $laba_bruto  = 0;
+    public $total_harga = 0;
 
     protected $rules = [
-        'id_barang'          => 'required|exists:barang,id',
-        'id_pajak'           => 'required|exists:pajak_transaksi,id',
-        'tanggal_transaksi'  => 'required|date',
-        'subtotal'           => 'required|numeric|min:0',
+        'id_barang'        => 'required|exists:barang,id',
+        'jumlah_penjualan' => 'required|integer|min:1',
+        'tanggal_transaksi'=> 'required|date',
+        'id_pajak'         => 'required|exists:pajak_transaksi,id',
     ];
 
-    public function updatedIdBarang()
+    public function updatedIdBarang($value)
     {
-        if ($b = Barang::find($this->id_barang)) {
+        $b = Barang::find($value);
+        if ($b) {
+            $this->harga_jual  = $b->harga_jual;
             $this->harga_pokok = $b->harga_beli;
-            $this->recalculate();
+        } else {
+            $this->harga_jual = $this->harga_pokok = 0;
         }
+        $this->recalculate();
     }
 
-    public function updatedIdPajak()
+    public function updatedJumlahPenjualan($value)
     {
         $this->recalculate();
     }
 
-    public function updatedSubtotal()
+    public function updatedIdPajak($value)
     {
         $this->recalculate();
     }
 
     private function recalculate()
     {
-        // hitung laba bruto
-        $this->laba_bruto = max(0, $this->subtotal - $this->harga_pokok);
+        // 1) Subtotal = harga_jual * jumlah_penjualan
+        $this->subtotal = $this->harga_jual * $this->jumlah_penjualan;
 
-        // hitung total harga termasuk pajak
+        // 2) Laba bruto = subtotal - (harga_pokok * jumlah_penjualan)
+        $this->laba_bruto = max(0, $this->subtotal - ($this->harga_pokok * $this->jumlah_penjualan));
+
+        // 3) Total harga = subtotal + pajak
         if ($p = PajakTransaksi::find($this->id_pajak)) {
-            $this->total_harga = $this->subtotal * (1 + ($p->tarif / 100));
+            $this->total_harga = round($this->subtotal * (1 + $p->presentase / 100), 2);
         } else {
             $this->total_harga = $this->subtotal;
         }
@@ -59,16 +79,27 @@ class Create extends Component
         TransaksiPenjualan::create([
             'id_kasir'           => Auth::id(),
             'id_barang'          => $this->id_barang,
-            'id_pajak'           => $this->id_pajak,
+            'jumlah_penjualan'   => $this->jumlah_penjualan,
             'tanggal_transaksi'  => $this->tanggal_transaksi,
+            'id_pajak'           => $this->id_pajak,
             'subtotal'           => $this->subtotal,
-            'harga_pokok'        => $this->harga_pokok,
+            'harga_pokok'        => $this->harga_pokok * $this->jumlah_penjualan,
             'laba_bruto'         => $this->laba_bruto,
             'total_harga'        => $this->total_harga,
         ]);
 
+        $this->reset([
+            'id_barang',
+            'jumlah_penjualan',
+            'tanggal_transaksi',
+            'id_pajak',
+            'harga_jual',
+            'harga_pokok',
+            'subtotal',
+            'laba_bruto',
+            'total_harga',
+        ]);
         $this->dispatch('refreshDatatable');
-        $this->reset(['id_barang','id_pajak','tanggal_transaksi','subtotal','harga_pokok','laba_bruto','total_harga']);
         $this->open = false;
     }
 

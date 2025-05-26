@@ -93,14 +93,12 @@ class LaporanPembelianTable extends DataTableComponent
         return [
             Column::make('ID', 'id')
                 ->sortable(),
-
+ 
             Column::make('Barang', 'barang.nama_barang')
-                ->sortable()
-                ->format(fn($_, $row) => $row->barang->nama_barang),
+                ->sortable(),
 
-            Column::make('Supplier', 'supplier.nama')
-                ->sortable()
-                ->format(fn($_, $row) => $row->supplier->nama),
+            Column::make('Supplier', 'supplier.nama_supplier')
+                ->sortable(),
 
             Column::make('Tanggal Transaksi', 'tanggal_transaksi')
                 ->sortable()

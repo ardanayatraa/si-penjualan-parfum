@@ -20,6 +20,7 @@ return new class extends Migration {
                   ->onDelete('restrict');
             $table->date('tanggal_transaksi');
             $table->decimal('subtotal', 15, 2);
+            $table->bigInteger('jumlah_penjualan');
             $table->decimal('harga_pokok', 15, 2);
             $table->decimal('laba_bruto', 15, 2);
             $table->decimal('total_harga', 15, 2);

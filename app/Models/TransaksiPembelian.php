@@ -19,6 +19,10 @@ class TransaksiPembelian extends Model
         'total',
     ];
 
+    protected $casts = [
+        'tanggal_transaksi' => 'datetime',
+    ];
+
     public function barang()
     {
         return $this->belongsTo(Barang::class, 'id_barang');

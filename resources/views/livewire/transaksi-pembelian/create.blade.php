@@ -10,7 +10,7 @@
 
                 <div>
                     <x-label value="Barang" />
-                    <select wire:model.defer="id_barang" class="w-full border-gray-300 rounded-md">
+                    <select wire:model.live="id_barang" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Barang --</option>
                         @foreach ($listBarang as $b)
                             <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
@@ -23,10 +23,10 @@
 
                 <div>
                     <x-label value="Supplier" />
-                    <select wire:model.defer="id_supplier" class="w-full border-gray-300 rounded-md">
+                    <select wire:model.live="id_supplier" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Supplier --</option>
                         @foreach ($listSupplier as $s)
-                            <option value="{{ $s->id }}">{{ $s->nama }}</option>
+                            <option value="{{ $s->id_supplier }}">{{ $s->nama_supplier }}</option>
                         @endforeach
                     </select>
                     @error('id_supplier')
@@ -45,7 +45,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <x-label value="Jumlah Pembelian" />
-                        <x-input type="number" wire:model.lazy="jumlah_pembelian" min="1" />
+                        <x-input type="number" wire:model.live="jumlah_pembelian" min="1" />
                         @error('jumlah_pembelian')
                             <span class="text-red-500 text-sm">{{ $message }}</span>
                         @enderror

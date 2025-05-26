@@ -33,29 +33,22 @@ class LaporanPenjualanTable extends DataTableComponent
         return [
             DateFilter::make('Tanggal Mulai')
                 ->config(['max' => now()->format('Y-m-d')])
-                ->filter(fn(Builder $builder, string $value) =>
-                    $builder->whereDate('tanggal_transaksi', '>=', $this->startDate = $value)
-                ),
-
+                ->filter(fn(Builder $q, string $v) => $q->whereDate('tanggal_transaksi', '>=', $this->startDate = $v)),
             DateFilter::make('Tanggal Akhir')
                 ->config(['max' => now()->format('Y-m-d')])
-                ->filter(fn(Builder $builder, string $value) =>
-                    $builder->whereDate('tanggal_transaksi', '<=', $this->endDate = $value)
-                ),
+                ->filter(fn(Builder $q, string $v) => $q->whereDate('tanggal_transaksi', '<=', $this->endDate = $v)),
         ];
     }
 
     public function bulkActions(): array
     {
-        return [
-            'exportPdf' => 'Export PDF',
-        ];
+        return ['exportPdf' => 'Export PDF'];
     }
 
     public function exportPdf()
     {
         $selected = $this->getSelected();
-        $query = TransaksiPenjualan::with(['kasir', 'barang', 'pajak'])
+        $q = TransaksiPenjualan::with(['kasir','barang','pajak'])
             ->when($selected, fn($q) => $q->whereIn('id', $selected));
 
         if ($this->startDate && $this->endDate) {
@@ -63,18 +56,15 @@ class LaporanPenjualanTable extends DataTableComponent
                 'startDate' => 'required|date',
                 'endDate'   => 'required|date|after_or_equal:startDate',
             ]);
-            $query->whereBetween('tanggal_transaksi', [$this->startDate, $this->endDate]);
+            $q->whereBetween('tanggal_transaksi', [$this->startDate, $this->endDate]);
         }
 
-        $data = $query->get();
+        $data  = $q->get();
         $start = $this->startDate ?: ($data->min('tanggal_transaksi')?->format('Y-m-d') ?? now()->format('Y-m-d'));
         $end   = $this->endDate   ?: ($data->max('tanggal_transaksi')?->format('Y-m-d') ?? now()->format('Y-m-d'));
 
-        $pdf = Pdf::loadView('exports.penjualan-pdf', [
-            'data'       => $data,
-            'start_date' => $start,
-            'end_date'   => $end,
-        ])->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('exports.penjualan-pdf', compact('data','start','end'))
+                  ->setPaper('a4','landscape');
 
         $this->clearSelected();
 
@@ -84,39 +74,38 @@ class LaporanPenjualanTable extends DataTableComponent
     public function columns(): array
     {
         return [
-            Column::make('ID', 'id')->sortable(),
+            Column::make('ID','id')->sortable(),
 
-            Column::make('Kasir', 'kasir.name')
+            Column::make('Kasir','kasir.username')
                 ->sortable()
-                ->format(fn($value,$row) => $row->kasir->name ?? '-'),
+          ,
 
-            Column::make('Barang', 'barang.nama_barang')
+            Column::make('Barang','barang.nama_barang')
                 ->sortable()
-                ->format(fn($value,$row) => $row->barang->nama_barang),
+          ,
 
-            Column::make('Pajak', 'pajak.nama')
+            Column::make('Tanggal','tanggal_transaksi')
                 ->sortable()
-                ->format(fn($value,$row) => "{$row->pajak->nama} ({$row->pajak->presentase}%)"),
+                ->format(fn($v) => Carbon::parse($v)->format('d-m-Y')),
 
-            Column::make('Tanggal', 'tanggal_transaksi')
-                ->sortable()
-                ->format(fn($value) => Carbon::parse($value)->format('d-m-Y')),
+            Column::make('Jumlah','jumlah_penjualan')
+                ->sortable(),
 
-            Column::make('Subtotal', 'subtotal')
+            Column::make('Subtotal','subtotal')
                 ->sortable()
-                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+                ->format(fn($v) => 'Rp '.number_format($v,0,',','.')),
 
-            Column::make('Harga Pokok', 'harga_pokok')
+            Column::make('Harga Pokok','harga_pokok')
                 ->sortable()
-                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+                ->format(fn($v) => 'Rp '.number_format($v,0,',','.')),
 
-            Column::make('Laba Bruto', 'laba_bruto')
+            Column::make('Laba Bruto','laba_bruto')
                 ->sortable()
-                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+                ->format(fn($v) => 'Rp '.number_format($v,0,',','.')),
 
-            Column::make('Total Harga', 'total_harga')
+            Column::make('Total Harga','total_harga')
                 ->sortable()
-                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+                ->format(fn($v) => 'Rp '.number_format($v,0,',','.')),
         ];
     }
 }

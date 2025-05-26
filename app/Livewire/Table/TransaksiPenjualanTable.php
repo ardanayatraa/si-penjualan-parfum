@@ -27,18 +27,20 @@ class TransaksiPenjualanTable extends DataTableComponent
             Column::make('ID', 'id')
                 ->sortable(),
 
-            Column::make('Kasir', 'kasir.name')
+            Column::make('Kasir', 'kasir.username')
                 ->sortable()
                 ->format(fn($value, $row) => $row->kasir->name ?? '-'),
 
             Column::make('Barang', 'barang.nama_barang')
                 ->sortable()
-                ->format(fn($value, $row) => $row->barang->nama_barang),
+              ,
 
             Column::make('Pajak', 'pajak.nama')
                 ->sortable()
-                ->format(fn($value, $row) => "{$row->pajak->nama} ({$row->pajak->presentase}%)"),
-
+               ,
+            Column::make('Jumlah', 'jumlah_penjualan')
+                ->sortable()
+            ,
             Column::make('Tanggal', 'tanggal_transaksi')
                 ->sortable()
                 ->format(fn($value) => Carbon::parse($value)->format('d-m-Y')),

@@ -36,7 +36,7 @@
         }
 
         th {
-            background-color: #f3f3f3;
+            background: #f3f3f3;
         }
 
         .page-break {
@@ -53,37 +53,47 @@
 
 <body>
 
-    <h2>Laporan Return Barang</h2>
-    <p>Periode: {{ $start_date }} s.d. {{ $end_date }}</p>
+    <h2>Laporan Penjualan</h2>
+    <p>Periode: {{ $start }} s.d. {{ $end }}</p>
 
     @php
-        $totalReturn = 0;
+        $totalSubtotal = 0;
+        $totalBruto = 0;
+        $totalHarga = 0;
     @endphp
 
     @foreach ($data->chunk(20) as $chunk)
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>#</th>
+                    <th>Kasir</th>
                     <th>Barang</th>
-                    <th>Supplier</th>
-                    <th>Tanggal Return</th>
-                    <th>Jumlah Return</th>
-                    <th>Alasan</th>
+                    <th>Tanggal</th>
+                    <th>Jumlah</th>
+                    <th>Subtotal</th>
+                    <th>Harga Pokok</th>
+                    <th>Laba Bruto</th>
+                    <th>Total Harga</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($chunk as $item)
+                @foreach ($chunk as $i => $item)
                     @php
-                        $totalReturn += $item->jumlah;
+                        $totalSubtotal += $item->subtotal;
+                        $totalBruto += $item->laba_bruto;
+                        $totalHarga += $item->total_harga;
                     @endphp
                     <tr>
-                        <td>{{ $item->id }}</td>
-                        <td>{{ $item->barang->nama_barang ?? '-' }}</td>
-                        <td>{{ $item->supplier->nama ?? '-' }}</td>
-                        <td>{{ \Carbon\Carbon::parse($item->tanggal_return)->format('d-m-Y') }}</td>
-                        <td>{{ $item->jumlah }}</td>
-                        <td>{{ $item->alasan }}</td>
+                        <td>{{ $loop->parent->index * 20 + $i + 1 }}</td>
+                        <td>{{ $item->kasir->username ?? '-' }}</td>
+                        <td>{{ $item->barang->nama_barang }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->tanggal_transaksi)->format('d-m-Y') }}</td>
+                        <td>{{ $item->jumlah_penjualan }}</td>
+                        <td>Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($item->harga_pokok, 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($item->laba_bruto, 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -95,7 +105,9 @@
     @endforeach
 
     <div class="summary">
-        <p>Total Jumlah Return: {{ $totalReturn }}</p>
+        <p>Total Subtotal: Rp {{ number_format($totalSubtotal, 0, ',', '.') }}</p>
+        <p>Total Laba Bruto: Rp {{ number_format($totalBruto, 0, ',', '.') }}</p>
+        <p>Total Harga: Rp {{ number_format($totalHarga, 0, ',', '.') }}</p>
     </div>
 
 </body>

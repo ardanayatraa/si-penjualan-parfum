@@ -20,8 +20,13 @@ class TransaksiPenjualan extends Model
         'harga_pokok',
         'laba_bruto',
         'total_harga',
+        'jumlah_penjualan',
     ];
 
+
+    protected $casts = [
+        'tanggal_transaksi' => 'datetime',
+    ];
     public function kasir()
     {
         return $this->belongsTo(User::class, 'id_kasir');
