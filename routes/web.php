@@ -48,6 +48,11 @@ Route::middleware([
         return view('page.transaksi-penjualan');
     })->name('transaksi-penjualan');
 
+    Route::get('/return-barang', function () {
+    return view('page.return');
+})->name('return-barang');
+
+
     Route::get('/pajak-transaksi', function () {
         return view('page.pajak-transaksi');
     })->name('pajak-transaksi');

@@ -4,107 +4,91 @@ namespace App\Livewire\TransaksiPenjualan;
 
 use Livewire\Component;
 use App\Models\Barang;
+use App\Models\PajakTransaksi;
 use App\Models\TransaksiPenjualan;
 
 class Update extends Component
 {
-    public $openEdit = false;
-
+    public $open = false;
     public $id_transaksi;
-    public $id_barang, $tanggal_transaksi, $jumlah, $harga_jual, $total_harga, $total_nilai_transaksi, $laba_bruto, $laba_bersih, $keterangan;
-    public $harga_beli;
+    public $id_barang, $id_pajak, $tanggal_transaksi, $subtotal;
+    public $harga_pokok, $laba_bruto, $total_harga;
 
-    protected $listeners = ['edit' => 'edit'];
+    protected $listeners = ['edit' => 'loadData'];
 
     protected $rules = [
-        'id_barang' => 'required|integer',
+        'id_barang'         => 'required|exists:barang,id',
+        'id_pajak'          => 'required|exists:pajak_transaksi,id',
         'tanggal_transaksi' => 'required|date',
-        'jumlah' => 'required|numeric|min:1',
-        'total_harga' => 'required|numeric|min:0',
-        'total_nilai_transaksi' => 'required|numeric|min:0',
-        'laba_bruto' => 'required|numeric',
-        'laba_bersih' => 'required|numeric',
-        'keterangan' => 'nullable|string|max:255',
+        'subtotal'          => 'required|numeric|min:0',
     ];
 
-    public function edit($id)
+    public function loadData($id)
     {
-        $data = TransaksiPenjualan::findOrFail($id);
-
-        $this->id_transaksi = $id;
-        $this->id_barang = $data->id_barang;
-        $this->tanggal_transaksi = $data->tanggal_transaksi;
-        $this->jumlah = $data->jumlah;
-        $this->harga_jual = $data->harga_jual;
-        $this->total_harga = $data->total_harga;
-        $this->total_nilai_transaksi = $data->total_nilai_transaksi;
-        $this->laba_bruto = $data->laba_bruto;
-        $this->laba_bersih = $data->laba_bersih;
-        $this->keterangan = $data->keterangan;
-
-        $barang = Barang::find($this->id_barang);
-        if ($barang) {
-            $this->harga_jual = $barang->harga_jual;
-            $this->harga_beli = $barang->harga_beli;
-        }
-
-        $this->openEdit = true;
+        $t = TransaksiPenjualan::findOrFail($id);
+        $this->id_transaksi     = $t->id;
+        $this->id_barang        = $t->id_barang;
+        $this->id_pajak         = $t->id_pajak;
+        $this->tanggal_transaksi= $t->tanggal_transaksi;
+        $this->subtotal         = $t->subtotal;
+        $this->harga_pokok      = $t->harga_pokok;
+        $this->laba_bruto       = $t->laba_bruto;
+        $this->total_harga      = $t->total_harga;
+        $this->open             = true;
     }
 
     public function updatedIdBarang()
     {
-        $barang = Barang::find($this->id_barang);
-
-        if ($barang) {
-            $this->harga_jual = $barang->harga_beli;
-            $this->harga_jual = $barang->harga_jual;
-            $this->harga_beli = $barang->harga_beli;
-            $this->hitungTotal();
+        if ($b = Barang::find($this->id_barang)) {
+            $this->harga_pokok = $b->harga_beli;
+            $this->recalculate();
         }
     }
 
-    public function updatedJumlah()
+    public function updatedIdPajak()
     {
-        $this->hitungTotal();
+        $this->recalculate();
     }
 
-    public function hitungTotal()
+    public function updatedSubtotal()
     {
-        $this->total_harga = $this->harga_jual * $this->jumlah;
-        $this->total_nilai_transaksi = $this->total_harga;
-        $this->laba_bruto = ($this->harga_jual - $this->harga_beli) * $this->jumlah;
-        $this->laba_bersih = $this->laba_bruto;
+        $this->recalculate();
+    }
+
+    private function recalculate()
+    {
+        $this->laba_bruto = max(0, $this->subtotal - $this->harga_pokok);
+        if ($p = PajakTransaksi::find($this->id_pajak)) {
+            $this->total_harga = $this->subtotal * (1 + ($p->tarif / 100));
+        } else {
+            $this->total_harga = $this->subtotal;
+        }
     }
 
     public function update()
     {
         $this->validate();
 
-        $barang = Barang::find($this->id_barang);
         TransaksiPenjualan::where('id', $this->id_transaksi)->update([
-            'id_barang' => $this->id_barang,
-            'tanggal_transaksi' => $this->tanggal_transaksi,
-            'jumlah' => $this->jumlah,
-            'harga_jual' => $barang->harga_beli,
-            'total_harga' => $this->total_harga,
-            'total_nilai_transaksi' => $this->total_nilai_transaksi,
-            'laba_bruto' => $this->laba_bruto,
-            'laba_bersih' => $this->laba_bersih,
-            'keterangan' => $this->keterangan,
+            'id_barang'          => $this->id_barang,
+            'id_pajak'           => $this->id_pajak,
+            'tanggal_transaksi'  => $this->tanggal_transaksi,
+            'subtotal'           => $this->subtotal,
+            'harga_pokok'        => $this->harga_pokok,
+            'laba_bruto'         => $this->laba_bruto,
+            'total_harga'        => $this->total_harga,
         ]);
 
         $this->dispatch('refreshDatatable');
-        $this->reset([
-            'id_transaksi', 'id_barang', 'tanggal_transaksi',  'jumlah', 'harga_jual',
-            'total_harga', 'total_nilai_transaksi', 'laba_bruto', 'laba_bersih', 'keterangan'
-        ]);
-        $this->openEdit = false;
+        $this->reset(['id_transaksi','id_barang','id_pajak','tanggal_transaksi','subtotal','harga_pokok','laba_bruto','total_harga']);
+        $this->open = false;
     }
 
     public function render()
     {
         return view('livewire.transaksi-penjualan.update', [
             'listBarang' => Barang::all(),
+            'listPajak'  => PajakTransaksi::all(),
         ]);
     }
 }

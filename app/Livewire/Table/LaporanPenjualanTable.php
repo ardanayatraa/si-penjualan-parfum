@@ -8,17 +8,24 @@ use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class LaporanPenjualanTable extends DataTableComponent
 {
     protected $model = TransaksiPenjualan::class;
 
     public string $startDate = '';
-    public string $endDate = '';
+    public string $endDate   = '';
 
     public function configure(): void
     {
         $this->setPrimaryKey('id');
+    }
+
+    public function builder(): Builder
+    {
+        return TransaksiPenjualan::query()
+            ->with(['kasir', 'barang', 'pajak']);
     }
 
     public function filters(): array
@@ -26,17 +33,15 @@ class LaporanPenjualanTable extends DataTableComponent
         return [
             DateFilter::make('Tanggal Mulai')
                 ->config(['max' => now()->format('Y-m-d')])
-                ->filter(function (Builder $builder, string $value) {
-                    $this->startDate = $value;
-                    return $builder->whereDate('tanggal_transaksi', '>=', $value);
-                }),
+                ->filter(fn(Builder $builder, string $value) =>
+                    $builder->whereDate('tanggal_transaksi', '>=', $this->startDate = $value)
+                ),
 
             DateFilter::make('Tanggal Akhir')
                 ->config(['max' => now()->format('Y-m-d')])
-                ->filter(function (Builder $builder, string $value) {
-                    $this->endDate = $value;
-                    return $builder->whereDate('tanggal_transaksi', '<=', $value);
-                }),
+                ->filter(fn(Builder $builder, string $value) =>
+                    $builder->whereDate('tanggal_transaksi', '<=', $this->endDate = $value)
+                ),
         ];
     }
 
@@ -49,69 +54,69 @@ class LaporanPenjualanTable extends DataTableComponent
 
     public function exportPdf()
     {
-        $selectedItems = $this->getSelected();
-
+        $selected = $this->getSelected();
         $query = TransaksiPenjualan::with(['kasir', 'barang', 'pajak'])
-            ->when(!empty($selectedItems), fn($q) => $q->whereIn('id', $selectedItems));
+            ->when($selected, fn($q) => $q->whereIn('id', $selected));
 
-        $start_date = $this->startDate;
-        $end_date = $this->endDate;
-
-        if ($start_date && $end_date) {
+        if ($this->startDate && $this->endDate) {
             $this->validate([
                 'startDate' => 'required|date',
-                'endDate' => 'required|date|after_or_equal:startDate',
+                'endDate'   => 'required|date|after_or_equal:startDate',
             ]);
-            $query->whereBetween('tanggal_transaksi', [$start_date, $end_date]);
-        } else {
-            $dataTemp = $query->clone()->get();
-            $start_date = $dataTemp->min('tanggal') ? \Carbon\Carbon::parse($dataTemp->min('tanggal_transaksi'))->format('Y-m-d') : now()->format('Y-m-d');
-            $end_date = $dataTemp->max('tanggal') ? \Carbon\Carbon::parse($dataTemp->max('tanggal_transaksi'))->format('Y-m-d') : now()->format('Y-m-d');
+            $query->whereBetween('tanggal_transaksi', [$this->startDate, $this->endDate]);
         }
 
         $data = $query->get();
+        $start = $this->startDate ?: ($data->min('tanggal_transaksi')?->format('Y-m-d') ?? now()->format('Y-m-d'));
+        $end   = $this->endDate   ?: ($data->max('tanggal_transaksi')?->format('Y-m-d') ?? now()->format('Y-m-d'));
 
         $pdf = Pdf::loadView('exports.penjualan-pdf', [
-            'data' => $data,
-            'start_date' => $start_date,
-            'end_date' => $end_date,
+            'data'       => $data,
+            'start_date' => $start,
+            'end_date'   => $end,
         ])->setPaper('a4', 'landscape');
 
         $this->clearSelected();
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->stream();
-        }, 'laporan-penjualan.pdf');
-    }
-
-    public function builder(): Builder
-    {
-        return TransaksiPenjualan::query()->with(['kasir', 'barang', 'pajak']);
+        return response()->streamDownload(fn() => print($pdf->stream()), "laporan-penjualan_{$start}_{$end}.pdf");
     }
 
     public function columns(): array
     {
         return [
-            Column::make("ID", "id")->sortable(),
-            Column::make("Kasir", "kasir.username")->sortable(),
-            Column::make("Barang", "barang.nama_barang")->sortable(),
-            Column::make("Tanggal Transaksi", "tanggal_transaksi")
+            Column::make('ID', 'id')->sortable(),
+
+            Column::make('Kasir', 'kasir.name')
                 ->sortable()
-                ->format(fn($val) => \Carbon\Carbon::parse($val)->format('d-m-Y')),
-            Column::make("Jumlah", "jumlah")->sortable(),
-            Column::make("Harga Jual", "harga_jual")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Pajak", "pajak.nilai_pajak")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Total Harga", "total_harga")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Total Nilai Transaksi", "total_nilai_transaksi")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Laba Bruto", "laba_bruto")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Laba Bersih", "laba_bersih")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Keterangan", "keterangan"),
+                ->format(fn($value,$row) => $row->kasir->name ?? '-'),
+
+            Column::make('Barang', 'barang.nama_barang')
+                ->sortable()
+                ->format(fn($value,$row) => $row->barang->nama_barang),
+
+            Column::make('Pajak', 'pajak.nama')
+                ->sortable()
+                ->format(fn($value,$row) => "{$row->pajak->nama} ({$row->pajak->presentase}%)"),
+
+            Column::make('Tanggal', 'tanggal_transaksi')
+                ->sortable()
+                ->format(fn($value) => Carbon::parse($value)->format('d-m-Y')),
+
+            Column::make('Subtotal', 'subtotal')
+                ->sortable()
+                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+
+            Column::make('Harga Pokok', 'harga_pokok')
+                ->sortable()
+                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+
+            Column::make('Laba Bruto', 'laba_bruto')
+                ->sortable()
+                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+
+            Column::make('Total Harga', 'total_harga')
+                ->sortable()
+                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
         ];
     }
 }

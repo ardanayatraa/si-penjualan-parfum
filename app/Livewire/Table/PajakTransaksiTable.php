@@ -13,35 +13,43 @@ class PajakTransaksiTable extends DataTableComponent
     public function configure(): void
     {
         $this->setPrimaryKey('id');
+
+        $this->setTrAttributes(fn($row, $index) => [
+            'default' => true,
+            'class'   => $index % 2 === 0 ? 'bg-gray-200' : '',
+        ]);
     }
 
     public function columns(): array
     {
         return [
-            Column::make("Id", "id")
+            Column::make('ID', 'id')
                 ->sortable(),
-            Column::make("Id transaksi", "id_transaksi")
+
+            Column::make('Nama Pajak', 'nama')
                 ->sortable(),
-            Column::make("Jenis transaksi", "jenis_transaksi")
-                ->sortable(),
-            Column::make("Persentase pajak", "persentase_pajak")
-                ->sortable(),
-            Column::make("Nilai pajak", "nilai_pajak")
-                ->sortable(),
-                Column::make('Aksi', 'id')
-                ->label(fn ($row) => view('components.link-action', [
-                    'id' => $row->id,
-                ]))->html(),
+
+            Column::make('Presentase (%)', 'presentase')
+                ->sortable()
+                ->format(fn($value) => number_format($value, 2, ',', '.') . '%'),
+
+            Column::make('Aksi', 'id')
+                ->label(fn($row) => view('components.link-action', [
+                    'id'           => $row->id,
+                    'editEvent'    => 'editPajak',
+                    'deleteEvent'  => 'deletePajak',
+                ]))
+                ->html(),
         ];
+    }
+
+    public function edit($id)
+    {
+        $this->dispatch('editPajak', $id);
     }
 
     public function delete($id)
     {
-        $this->dispatch('delete', $id);
-
-    }
-    public function edit($id)
-    {
-        $this->dispatch('edit', $id);
+        $this->dispatch('deletePajak', $id);
     }
 }

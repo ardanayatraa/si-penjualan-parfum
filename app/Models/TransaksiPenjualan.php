@@ -4,23 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\User;
 
 class TransaksiPenjualan extends Model
 {
     use HasFactory;
-    protected $table='transaksi_penjualan';
+
+    protected $table = 'transaksi_penjualan';
+
     protected $fillable = [
         'id_kasir',
         'id_barang',
+        'id_pajak',
         'tanggal_transaksi',
-        'jumlah',
-        'harga_jual',
-        'total_harga',
-        'total_nilai_transaksi',
+        'subtotal',
+        'harga_pokok',
         'laba_bruto',
-        'laba_bersih',
-        'keterangan',
+        'total_harga',
     ];
 
     public function kasir()
@@ -35,6 +34,6 @@ class TransaksiPenjualan extends Model
 
     public function pajak()
     {
-        return $this->hasOne(PajakTransaksi::class, 'id_transaksi');
+        return $this->belongsTo(PajakTransaksi::class, 'id_pajak');
     }
 }

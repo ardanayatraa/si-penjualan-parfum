@@ -5,6 +5,7 @@ namespace App\Livewire\Table;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use App\Models\TransaksiPenjualan;
+use Carbon\Carbon;
 
 class TransaksiPenjualanTable extends DataTableComponent
 {
@@ -13,51 +14,68 @@ class TransaksiPenjualanTable extends DataTableComponent
     public function configure(): void
     {
         $this->setPrimaryKey('id');
+
+        $this->setTrAttributes(fn($row, $index) => [
+            'default' => true,
+            'class'   => $index % 2 === 0 ? 'bg-gray-200' : '',
+        ]);
     }
 
     public function columns(): array
     {
         return [
-            Column::make("Id", "id")
-                ->sortable(),
-            Column::make("Id kasir", "id_kasir")
-                ->sortable(),
-            Column::make("Id barang", "id_barang")
-                ->sortable(),
-            Column::make("Tanggal transaksi", "tanggal_transaksi")
-                ->sortable(),
-            Column::make("Jumlah", "jumlah")
-                ->sortable(),
-            Column::make("Harga Jual", "harga_jual")
-                ->sortable(),
-            Column::make("Total harga", "total_harga")
-                ->sortable(),
-            Column::make("Total nilai transaksi", "total_nilai_transaksi")
+            Column::make('ID', 'id')
                 ->sortable(),
 
+            Column::make('Kasir', 'kasir.name')
+                ->sortable()
+                ->format(fn($value, $row) => $row->kasir->name ?? '-'),
 
-            Column::make("Laba bruto", "laba_bruto")
-                ->sortable(),
-            Column::make("Laba bersih", "laba_bersih")
-                ->sortable(),
-            Column::make("Keterangan", "keterangan")
-                ->sortable(),
+            Column::make('Barang', 'barang.nama_barang')
+                ->sortable()
+                ->format(fn($value, $row) => $row->barang->nama_barang),
 
-                Column::make('Aksi', 'id')
-                ->label(fn ($row) => view('components.link-action', [
-                    'id' => $row->id,
-                ]))->html(),
+            Column::make('Pajak', 'pajak.nama')
+                ->sortable()
+                ->format(fn($value, $row) => "{$row->pajak->nama} ({$row->pajak->presentase}%)"),
 
+            Column::make('Tanggal', 'tanggal_transaksi')
+                ->sortable()
+                ->format(fn($value) => Carbon::parse($value)->format('d-m-Y')),
+
+            Column::make('Subtotal', 'subtotal')
+                ->sortable()
+                ->format(fn($value) => number_format($value, 2, ',', '.')),
+
+            Column::make('Harga Pokok', 'harga_pokok')
+                ->sortable()
+                ->format(fn($value) => number_format($value, 2, ',', '.')),
+
+            Column::make('Laba Bruto', 'laba_bruto')
+                ->sortable()
+                ->format(fn($value) => number_format($value, 2, ',', '.')),
+
+            Column::make('Total Harga', 'total_harga')
+                ->sortable()
+                ->format(fn($value) => number_format($value, 2, ',', '.')),
+
+            Column::make('Aksi', 'id')
+                ->label(fn($row) => view('components.link-action', [
+                    'id'           => $row->id,
+                    'editEvent'    => 'edit',
+                    'deleteEvent'  => 'delete',
+                ]))
+                ->html(),
         ];
+    }
+
+    public function edit($id)
+    {
+        $this->dispatch('edit', $id);
     }
 
     public function delete($id)
     {
         $this->dispatch('delete', $id);
-
-    }
-    public function edit($id)
-    {
-        $this->dispatch('edit', $id);
     }
 }

@@ -53,12 +53,11 @@
 
 <body>
 
-    <h2>Laporan Penjualan</h2>
+    <h2>Laporan Return Barang</h2>
     <p>Periode: {{ $start_date }} s.d. {{ $end_date }}</p>
 
     @php
-        $totalBruto = 0;
-        $totalBersih = 0;
+        $totalReturn = 0;
     @endphp
 
     @foreach ($data->chunk(20) as $chunk)
@@ -66,38 +65,25 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Kasir</th>
                     <th>Barang</th>
-                    <th>Tanggal Transaksi</th>
-                    <th>Jumlah</th>
-                    <th>Harga Jual</th>
-                    <th>Pajak</th>
-                    <th>Total Harga</th>
-                    <th>Total Nilai Transaksi</th>
-                    <th>Laba Bruto</th>
-                    <th>Laba Bersih</th>
-                    <th>Keterangan</th>
+                    <th>Supplier</th>
+                    <th>Tanggal Return</th>
+                    <th>Jumlah Return</th>
+                    <th>Alasan</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($chunk as $item)
                     @php
-                        $totalBruto += $item->laba_bruto;
-                        $totalBersih += $item->laba_bersih;
+                        $totalReturn += $item->jumlah;
                     @endphp
                     <tr>
                         <td>{{ $item->id }}</td>
-                        <td>{{ $item->kasir->username ?? '-' }}</td>
                         <td>{{ $item->barang->nama_barang ?? '-' }}</td>
-                        <td>{{ \Carbon\Carbon::parse($item->tanggal_transaksi)->format('d-m-Y') }}</td>
+                        <td>{{ $item->supplier->nama ?? '-' }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->tanggal_return)->format('d-m-Y') }}</td>
                         <td>{{ $item->jumlah }}</td>
-                        <td>Rp {{ number_format($item->harga_jual, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->pajak->nilai_pajak ?? 0, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->total_nilai_transaksi, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->laba_bruto, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->laba_bersih, 0, ',', '.') }}</td>
-                        <td>{{ $item->keterangan }}</td>
+                        <td>{{ $item->alasan }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -109,8 +95,7 @@
     @endforeach
 
     <div class="summary">
-        <p>Total Laba Bruto: Rp {{ number_format($totalBruto, 0, ',', '.') }}</p>
-        <p>Total Laba Bersih: Rp {{ number_format($totalBersih, 0, ',', '.') }}</p>
+        <p>Total Jumlah Return: {{ $totalReturn }}</p>
     </div>
 
 </body>

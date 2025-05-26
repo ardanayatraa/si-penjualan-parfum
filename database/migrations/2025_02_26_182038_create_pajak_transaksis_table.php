@@ -9,10 +9,8 @@ return new class extends Migration {
     {
         Schema::create('pajak_transaksi', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_transaksi');
-            $table->enum('jenis_transaksi', ['penjualan', 'pembelian']);
-            $table->decimal('persentase_pajak', 5, 2);
-            $table->decimal('nilai_pajak', 15, 2);
+            $table->string('nama')->unique();
+            $table->decimal('presentase', 5, 2)->default(0);
             $table->timestamps();
         });
     }

@@ -8,17 +8,13 @@ use App\Models\Barang;
 class Create extends Component
 {
     public $open = false;
-    public $nama_barang, $harga_beli, $harga_jual, $jumlah_retur, $jumlah_terjual, $jumlah_stok, $jumlah_nilai_stok, $keterangan;
+    public $nama_barang, $harga_beli, $harga_jual, $stok;
 
     protected $rules = [
         'nama_barang' => 'required|string|max:255',
-        'harga_beli' => 'required|numeric',
-        'harga_jual' => 'required|numeric',
-        'jumlah_retur' => 'nullable|integer',
-        'jumlah_terjual' => 'nullable|integer',
-        'jumlah_stok' => 'nullable|integer',
-        'jumlah_nilai_stok' => 'nullable|numeric',
-        'keterangan' => 'nullable|string',
+        'harga_beli'  => 'required|numeric',
+        'harga_jual'  => 'required|numeric',
+        'stok'        => 'required|integer',
     ];
 
     public function store()
@@ -27,20 +23,15 @@ class Create extends Component
 
         Barang::create([
             'nama_barang' => $this->nama_barang,
-            'harga_beli' => $this->harga_beli,
-            'harga_jual' => $this->harga_jual,
-            'jumlah_retur' => $this->jumlah_retur,
-            'jumlah_terjual' => $this->jumlah_terjual,
-            'jumlah_stok' => $this->jumlah_stok,
-            'jumlah_nilai_stok' => $this->jumlah_nilai_stok,
-            'keterangan' => $this->keterangan,
+            'harga_beli'  => $this->harga_beli,
+            'harga_jual'  => $this->harga_jual,
+            'stok'        => $this->stok,
         ]);
 
-        $this->reset();
+        $this->reset(['nama_barang','harga_beli','harga_jual','stok']);
         $this->dispatch('refreshDatatable');
         $this->open = false;
     }
-
 
     public function render()
     {

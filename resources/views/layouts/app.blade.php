@@ -115,6 +115,13 @@
                                 <span>Pajak Transaksi</span>
                             </a>
 
+                            <a href="{{ route('return-barang') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('return-barang') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-undo w-5 h-5 mr-3"></i>
+                                <span>Return Barang</span>
+                            </a>
+
+
                             <a href="{{ route('user') }}"
                                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('user') ? 'sidebar-active' : '' }}">
                                 <i class="fas fa-users w-5 h-5 mr-3"></i>

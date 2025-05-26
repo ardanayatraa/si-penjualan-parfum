@@ -15,11 +15,17 @@ class LaporanPembelianTable extends DataTableComponent
     protected $model = TransaksiPembelian::class;
 
     public string $startDate = '';
-    public string $endDate = '';
+    public string $endDate   = '';
 
     public function configure(): void
     {
         $this->setPrimaryKey('id');
+    }
+
+    public function builder(): Builder
+    {
+        return TransaksiPembelian::query()
+            ->with(['barang', 'supplier']);
     }
 
     public function filters(): array
@@ -29,14 +35,14 @@ class LaporanPembelianTable extends DataTableComponent
                 ->config(['max' => now()->format('Y-m-d')])
                 ->filter(function (Builder $builder, string $value) {
                     $this->startDate = $value;
-                    return $builder->whereDate('tanggal', '>=', $value);
+                    return $builder->whereDate('tanggal_transaksi', '>=', $value);
                 }),
 
             DateFilter::make('Tanggal Akhir')
                 ->config(['max' => now()->format('Y-m-d')])
                 ->filter(function (Builder $builder, string $value) {
                     $this->endDate = $value;
-                    return $builder->whereDate('tanggal', '<=', $value);
+                    return $builder->whereDate('tanggal_transaksi', '<=', $value);
                 }),
         ];
     }
@@ -50,71 +56,62 @@ class LaporanPembelianTable extends DataTableComponent
 
     public function exportPdf()
     {
-        $selectedItems = $this->getSelected();
-
+        $selected = $this->getSelected();
         $query = TransaksiPembelian::with(['barang', 'supplier'])
-            ->when(!empty($selectedItems), fn($q) => $q->whereIn('id', $selectedItems));
+            ->when($selected, fn($q) => $q->whereIn('id', $selected));
 
-        $start_date = $this->startDate;
-        $end_date = $this->endDate;
-
-        if ($start_date && $end_date) {
+        if ($this->startDate && $this->endDate) {
             $this->validate([
                 'startDate' => 'required|date',
-                'endDate' => 'required|date|after_or_equal:startDate',
+                'endDate'   => 'required|date|after_or_equal:startDate',
             ]);
-            $query->whereBetween('tanggal', [$start_date, $end_date]);
-        } else {
-            $dataTemp = $query->clone()->get();
-            $minTanggal = $dataTemp->min('tanggal');
-            $maxTanggal = $dataTemp->max('tanggal');
-
-            $start_date = $minTanggal
-                ? Carbon::parse($minTanggal)->format('Y-m-d')
-                : now()->format('Y-m-d');
-
-            $end_date = $maxTanggal
-                ? Carbon::parse($maxTanggal)->format('Y-m-d')
-                : now()->format('Y-m-d');
+            $query->whereBetween('tanggal_transaksi', [$this->startDate, $this->endDate]);
         }
 
         $data = $query->get();
 
+        $start = $this->startDate
+            ?: ($data->min('tanggal_transaksi')?->format('Y-m-d') ?? now()->format('Y-m-d'));
+        $end = $this->endDate
+            ?: ($data->max('tanggal_transaksi')?->format('Y-m-d') ?? now()->format('Y-m-d'));
+
         $pdf = Pdf::loadView('exports.pembelian-pdf', [
-            'data' => $data,
-            'start_date' => Carbon::parse($start_date)->translatedFormat('d M Y'),
-            'end_date' => Carbon::parse($end_date)->translatedFormat('d M Y'),
+            'data'       => $data,
+            'start_date' => Carbon::parse($start)->format('d M Y'),
+            'end_date'   => Carbon::parse($end)->format('d M Y'),
         ])->setPaper('a4', 'landscape');
 
         $this->clearSelected();
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->stream();
-        }, 'laporan-pembelian.pdf');
-    }
-
-    public function builder(): Builder
-    {
-        return TransaksiPembelian::query()->with(['barang', 'supplier']);
+        return response()->streamDownload(fn() => print($pdf->stream()),
+            "laporan-pembelian_{$start}_{$end}.pdf"
+        );
     }
 
     public function columns(): array
     {
         return [
-            Column::make("ID", "id")->sortable(),
-            Column::make("Barang", "barang.nama_barang")->sortable(),
-            Column::make("Supplier", "supplier.nama_supplier")->sortable(),
-            Column::make("Tanggal", "tanggal")
+            Column::make('ID', 'id')
+                ->sortable(),
+
+            Column::make('Barang', 'barang.nama_barang')
+                ->sortable()
+                ->format(fn($_, $row) => $row->barang->nama_barang),
+
+            Column::make('Supplier', 'supplier.nama')
+                ->sortable()
+                ->format(fn($_, $row) => $row->supplier->nama),
+
+            Column::make('Tanggal Transaksi', 'tanggal_transaksi')
                 ->sortable()
                 ->format(fn($val) => Carbon::parse($val)->format('d-m-Y')),
-            Column::make("Jumlah", "jumlah")->sortable(),
-            Column::make("Harga Beli", "harga_beli")
+
+            Column::make('Jumlah Pembelian', 'jumlah_pembelian')
+                ->sortable(),
+
+            Column::make('Total (Rp)', 'total')
+                ->sortable()
                 ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Total Harga Beli", "total_harga_beli")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Total Nilai Transaksi", "total_nilai_transaksi")
-                ->format(fn($val) => 'Rp ' . number_format($val, 0, ',', '.')),
-            Column::make("Keterangan", "keterangan"),
         ];
     }
 }

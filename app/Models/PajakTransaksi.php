@@ -8,16 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class PajakTransaksi extends Model
 {
     use HasFactory;
-    protected $table='pajak_transaksi';
-    protected $fillable = [
-        'id_transaksi',
-        'jenis_transaksi',
-        'persentase_pajak',
-        'nilai_pajak',
-    ];
 
-    public function transaksiPenjualan()
-    {
-        return $this->belongsTo(TransaksiPenjualan::class, 'id_transaksi');
-    }
+    protected $table = 'pajak_transaksi';
+
+    protected $fillable = [
+        'nama',
+        'presentase',
+    ];
 }

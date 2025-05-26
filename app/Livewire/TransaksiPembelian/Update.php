@@ -6,88 +6,80 @@ use Livewire\Component;
 use App\Models\TransaksiPembelian;
 use App\Models\Barang;
 use App\Models\Supplier;
-use Illuminate\Support\Facades\Gate;
 
 class Update extends Component
 {
     public $open = false;
-    public $transaksi_id;
+    public $transaksiId;
+    public $id_barang, $id_supplier, $tanggal_transaksi, $jumlah_pembelian, $total;
+    public $harga_beli = 0;
 
-    public $id_barang, $id_supplier, $tanggal,  $harga_beli, $jumlah, $total_harga_beli, $total_nilai_transaksi, $keterangan;
-
-    protected $listeners = ['edit' => 'loadData'];
+    protected $listeners = ['editTransaksi' => 'loadData'];
 
     protected $rules = [
-        'id_barang' => 'required|integer',
-        'id_supplier' => 'required|integer',
-        'tanggal' => 'required|date',
-        'harga_beli' => 'required|numeric|min:0',
-        'jumlah' => 'required|numeric|min:1',
-        'total_harga_beli' => 'required|numeric|min:0',
-        'total_nilai_transaksi' => 'required|numeric|min:0',
-        'keterangan' => 'nullable|string|max:255',
+        'id_barang'           => 'required|exists:barang,id',
+        'id_supplier'         => 'required|exists:suppliers,id',
+        'tanggal_transaksi'   => 'required|date',
+        'jumlah_pembelian'    => 'required|integer|min:1',
     ];
 
     public function loadData($id)
     {
-        $transaksi = TransaksiPembelian::findOrFail($id);
+        $t = TransaksiPembelian::findOrFail($id);
 
-        $this->transaksi_id = $transaksi->id;
-        $this->id_barang = $transaksi->id_barang;
-        $this->id_supplier = $transaksi->id_supplier;
-        $this->tanggal = $transaksi->tanggal;
-        $this->harga_beli = $transaksi->harga_beli;
-        $this->jumlah = $transaksi->jumlah;
-        $this->total_harga_beli = $transaksi->total_harga_beli;
-        $this->total_nilai_transaksi = $transaksi->total_nilai_transaksi;
-        $this->keterangan = $transaksi->keterangan;
+        $this->transaksiId      = $t->id;
+        $this->id_barang        = $t->id_barang;
+        $this->id_supplier      = $t->id_supplier;
+        $this->tanggal_transaksi= $t->tanggal_transaksi;
+        $this->jumlah_pembelian = $t->jumlah_pembelian;
+        $this->total            = $t->total;
+
+        if ($b = Barang::find($this->id_barang)) {
+            $this->harga_beli = $b->harga_beli;
+        }
 
         $this->open = true;
     }
 
-    public function updatedHargaBeli()
+    public function updatedIdBarang()
     {
-        $this->hitungTotal();
+        if ($b = Barang::find($this->id_barang)) {
+            $this->harga_beli = $b->harga_beli;
+            $this->recalculate();
+        }
     }
 
-    public function updatedJumlah()
+    public function updatedJumlahPembelian()
     {
-        $this->hitungTotal();
+        $this->recalculate();
     }
 
-    public function hitungTotal()
+    private function recalculate()
     {
-        $this->total_harga_beli = $this->harga_beli * $this->jumlah;
-        $this->total_nilai_transaksi = $this->total_harga_beli;
+        $this->total = round($this->harga_beli * $this->jumlah_pembelian, 2);
     }
 
     public function update()
     {
         $this->validate();
 
-        $transaksi = TransaksiPembelian::findOrFail($this->transaksi_id);
-
-        $transaksi->update([
-            'id_barang' => $this->id_barang,
-            'id_supplier' => $this->id_supplier,
-            'tanggal' => $this->tanggal,
-            'nama_barang' => $this->nama_barang,
-            'harga_beli' => $this->harga_beli,
-            'jumlah' => $this->jumlah,
-            'total_harga_beli' => $this->total_harga_beli,
-            'total_nilai_transaksi' => $this->total_nilai_transaksi,
-            'keterangan' => $this->keterangan,
+        TransaksiPembelian::where('id', $this->transaksiId)->update([
+            'id_barang'         => $this->id_barang,
+            'id_supplier'       => $this->id_supplier,
+            'tanggal_transaksi' => $this->tanggal_transaksi,
+            'jumlah_pembelian'  => $this->jumlah_pembelian,
+            'total'             => $this->total,
         ]);
 
+        $this->reset(['transaksiId','id_barang','id_supplier','tanggal_transaksi','jumlah_pembelian','total','harga_beli']);
         $this->dispatch('refreshDatatable');
-        $this->reset();
         $this->open = false;
     }
 
     public function render()
     {
         return view('livewire.transaksi-pembelian.update', [
-            'listBarang' => Barang::all(),
+            'listBarang'   => Barang::all(),
             'listSupplier' => Supplier::all(),
         ]);
     }

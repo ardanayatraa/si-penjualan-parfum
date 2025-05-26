@@ -9,14 +9,14 @@ return new class extends Migration {
     {
         Schema::create('transaksi_pembelian', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_barang');
-            $table->foreignId('id_supplier');
-            $table->date('tanggal');
-            $table->integer('harga_beli');
-            $table->integer('jumlah');
-            $table->integer('total_harga_beli');
-            $table->integer('total_nilai_transaksi');
-            $table->string('keterangan', 100)->nullable();
+            $table->foreignId('id_barang')
+                  ->constrained('barang')
+                  ->onDelete('restrict');
+            $table->foreignId('id_supplier')
+                  ;
+            $table->date('tanggal_transaksi');
+            $table->integer('jumlah_pembelian')->default(1);
+            $table->decimal('total', 15, 2)->default(0);
             $table->timestamps();
         });
     }

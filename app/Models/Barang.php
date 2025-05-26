@@ -8,16 +8,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Barang extends Model
 {
     use HasFactory;
-    protected $table='barang';
+
+    protected $table = 'barang';
+
     protected $fillable = [
         'nama_barang',
         'harga_beli',
         'harga_jual',
-        'jumlah_retur',
-        'jumlah_terjual',
-        'jumlah_stok',
-        'jumlah_nilai_stok',
-        'keterangan',
+        'stok',
     ];
 
     public function transaksiPembelian()

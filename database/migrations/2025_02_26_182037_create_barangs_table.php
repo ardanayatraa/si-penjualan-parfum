@@ -12,11 +12,7 @@ return new class extends Migration {
             $table->string('nama_barang', 30);
             $table->integer('harga_beli');
             $table->integer('harga_jual');
-            $table->integer('jumlah_retur')->default(0);
-            $table->integer('jumlah_terjual')->default(0);
-            $table->integer('jumlah_stok')->default(0);
-            $table->integer('jumlah_nilai_stok')->default(0);
-            $table->string('keterangan', 50)->nullable();
+            $table->integer('stok')->default(0);
             $table->timestamps();
         });
     }

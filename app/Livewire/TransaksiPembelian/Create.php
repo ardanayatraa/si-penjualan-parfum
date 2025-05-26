@@ -10,40 +10,33 @@ use App\Models\Supplier;
 class Create extends Component
 {
     public $open = false;
-
-    public $id_barang, $id_supplier, $tanggal, $jumlah, $total_harga_beli, $total_nilai_transaksi, $keterangan;
-    public $nama_barang, $harga_beli;
+    public $id_barang, $id_supplier, $tanggal_transaksi, $jumlah_pembelian = 1, $total = 0;
+    public $harga_beli = 0;
 
     protected $rules = [
-        'id_barang' => 'required|integer',
-        'id_supplier' => 'required|integer',
-        'tanggal' => 'required|date',
-        'jumlah' => 'required|numeric|min:1',
-        'harga_beli' => 'required|numeric|min:0',
-        'total_harga_beli' => 'required|numeric|min:0',
-        'total_nilai_transaksi' => 'required|numeric|min:0',
-        'keterangan' => 'nullable|string|max:255',
+        'id_barang'           => 'required|exists:barang,id',
+        'id_supplier'         => 'required|exists:suppliers,id',
+        'tanggal_transaksi'   => 'required|date',
+        'jumlah_pembelian'    => 'required|integer|min:1',
+        // total dihitung otomatis
     ];
 
     public function updatedIdBarang()
     {
-        $barang = Barang::find($this->id_barang);
-
-        if ($barang) {
-            $this->harga_beli = $barang->harga_beli;
-            $this->hitungTotal();
+        if ($b = Barang::find($this->id_barang)) {
+            $this->harga_beli = $b->harga_beli;
+            $this->recalculate();
         }
     }
 
-    public function updatedJumlah()
+    public function updatedJumlahPembelian()
     {
-        $this->hitungTotal();
+        $this->recalculate();
     }
 
-    public function hitungTotal()
+    private function recalculate()
     {
-        $this->total_harga_beli = $this->harga_beli * $this->jumlah;
-        $this->total_nilai_transaksi = $this->total_harga_beli;
+        $this->total = round($this->harga_beli * $this->jumlah_pembelian, 2);
     }
 
     public function store()
@@ -51,25 +44,22 @@ class Create extends Component
         $this->validate();
 
         TransaksiPembelian::create([
-            'id_barang' => $this->id_barang,
-            'id_supplier' => $this->id_supplier,
-            'tanggal' => $this->tanggal,
-            'harga_beli' => $this->harga_beli,
-            'jumlah' => $this->jumlah,
-            'total_harga_beli' => $this->total_harga_beli,
-            'total_nilai_transaksi' => $this->total_nilai_transaksi,
-            'keterangan' => $this->keterangan,
+            'id_barang'         => $this->id_barang,
+            'id_supplier'       => $this->id_supplier,
+            'tanggal_transaksi' => $this->tanggal_transaksi,
+            'jumlah_pembelian'  => $this->jumlah_pembelian,
+            'total'             => $this->total,
         ]);
 
+        $this->reset(['id_barang','id_supplier','tanggal_transaksi','jumlah_pembelian','total','harga_beli']);
         $this->dispatch('refreshDatatable');
-        $this->reset(['id_barang', 'id_supplier', 'tanggal', 'jumlah', 'harga_beli', 'total_harga_beli', 'total_nilai_transaksi', 'keterangan']);
         $this->open = false;
     }
 
     public function render()
     {
         return view('livewire.transaksi-pembelian.create', [
-            'listBarang' => Barang::all(),
+            'listBarang'   => Barang::all(),
             'listSupplier' => Supplier::all(),
         ]);
     }

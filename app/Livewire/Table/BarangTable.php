@@ -14,54 +14,49 @@ class BarangTable extends DataTableComponent
     {
         $this->setPrimaryKey('id');
 
-        $this->setTrAttributes(function($row, $index) {
-            if ($index % 2 === 0) {
-              return [
-                'default' => true,
-                'class' => 'bg-gray-200',
-              ];
-            }
-
-            return ['default' => true];
-        });
+        $this->setTrAttributes(fn($row, $index) => [
+            'default' => true,
+            'class'   => $index % 2 === 0 ? 'bg-gray-200' : '',
+        ]);
     }
 
     public function columns(): array
     {
         return [
-            Column::make("Id", "id")
+            Column::make('ID', 'id')
                 ->sortable(),
-            Column::make("Nama barang", "nama_barang")
+
+            Column::make('Nama Barang', 'nama_barang')
                 ->sortable(),
-            Column::make("Harga beli", "harga_beli")
-                ->sortable(),
-            Column::make("Harga jual", "harga_jual")
-                ->sortable(),
-            Column::make("Jumlah retur", "jumlah_retur")
-                ->sortable(),
-            Column::make("Jumlah terjual", "jumlah_terjual")
-                ->sortable(),
-            Column::make("Jumlah stok", "jumlah_stok")
-                ->sortable(),
-            Column::make("Jumlah nilai stok", "jumlah_nilai_stok")
-                ->sortable(),
-            Column::make("Keterangan", "keterangan")
+
+            Column::make('Harga Beli', 'harga_beli')
+                ->sortable()
+                ->format(fn($value) => number_format($value, 0, ',', '.')),
+
+            Column::make('Harga Jual', 'harga_jual')
+                ->sortable()
+                ->format(fn($value) => number_format($value, 0, ',', '.')),
+
+            Column::make('Stok', 'stok')
                 ->sortable(),
 
             Column::make('Aksi', 'id')
-            ->label(fn ($row) => view('components.link-action', [
-                'id' => $row->id,
-            ]))->html(),
+                ->label(fn($row) => view('components.link-action', [
+                    'id'         => $row->id,
+                    'editEvent'  => 'edit',
+                    'deleteEvent'=> 'delete',
+                ]))
+                ->html(),
         ];
+    }
+
+    public function edit($id)
+    {
+        $this->dispatch('edit', $id);
     }
 
     public function delete($id)
     {
         $this->dispatch('delete', $id);
-
-    }
-    public function edit($id)
-    {
-        $this->dispatch('edit', $id);
     }
 }

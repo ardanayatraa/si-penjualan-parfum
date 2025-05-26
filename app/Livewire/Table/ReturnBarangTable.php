@@ -4,21 +4,25 @@ namespace App\Livewire\Table;
 
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
-use App\Models\TransaksiPembelian;
-use Carbon\Carbon;
+use App\Models\ReturnBarang;
 
-class TransaksiPembelianTable extends DataTableComponent
+class ReturnBarangTable extends DataTableComponent
 {
-    protected $model = TransaksiPembelian::class;
+    protected $model = ReturnBarang::class;
 
     public function configure(): void
     {
         $this->setPrimaryKey('id');
 
-        $this->setTrAttributes(fn($row, $index) => [
-            'default' => true,
-            'class'   => $index % 2 === 0 ? 'bg-gray-200' : '',
-        ]);
+        $this->setTrAttributes(function($row, $index) {
+            if ($index % 2 === 0) {
+                return [
+                    'default' => true,
+                    'class'   => 'bg-gray-200',
+                ];
+            }
+            return ['default' => true];
+        });
     }
 
     public function columns(): array
@@ -35,22 +39,22 @@ class TransaksiPembelianTable extends DataTableComponent
                 ->sortable()
                 ->format(fn($value, $row) => $row->supplier->nama),
 
-            Column::make('Tanggal Transaksi', 'tanggal_transaksi')
-                ->sortable()
-                ->format(fn($value) => Carbon::parse($value)->format('d-m-Y')),
-
-            Column::make('Jumlah Pembelian', 'jumlah_pembelian')
+            Column::make('Jumlah', 'jumlah')
                 ->sortable(),
 
-            Column::make('Total', 'total')
+            Column::make('Alasan', 'alasan')
                 ->sortable()
-                ->format(fn($value) => number_format($value, 2, ',', '.')),
+                ,
+
+            Column::make('Tanggal Return', 'tanggal_return')
+                ->sortable()
+                ->format(fn($value) => \Carbon\Carbon::parse($value)->format('d-m-Y')),
 
             Column::make('Aksi', 'id')
                 ->label(fn($row) => view('components.link-action', [
                     'id'           => $row->id,
-                    'editEvent'    => 'editTransaksi',
-                    'deleteEvent'  => 'deleteTransaksi',
+                    'editEvent'    => 'editReturn',
+                    'deleteEvent'  => 'deleteReturn',
                 ]))
                 ->html(),
         ];
@@ -58,11 +62,11 @@ class TransaksiPembelianTable extends DataTableComponent
 
     public function edit($id)
     {
-        $this->dispatch('editTransaksi', $id);
+        $this->dispatch('editReturn', $id);
     }
 
     public function delete($id)
     {
-        $this->dispatch('deleteTransaksi', $id);
+        $this->dispatch('deleteReturn', $id);
     }
 }

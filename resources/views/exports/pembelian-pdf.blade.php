@@ -50,10 +50,8 @@
 </head>
 
 <body>
-
     @php
-        $total_harga_beli = 0;
-        $total_nilai_transaksi = 0;
+        $grandTotal = 0;
     @endphp
 
     @foreach ($data->chunk(20) as $chunkIndex => $chunk)
@@ -67,29 +65,22 @@
                     <th>Barang</th>
                     <th>Supplier</th>
                     <th>Tanggal</th>
-                    <th>Jumlah</th>
-                    <th>Harga Beli</th>
-                    <th>Total Harga Beli</th>
-                    <th>Total Nilai Transaksi</th>
-
+                    <th>Jumlah Pembelian</th>
+                    <th>Total (Rp)</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($chunk as $i => $item)
                     @php
-                        $total_harga_beli += $item->total_harga_beli;
-                        $total_nilai_transaksi += $item->total_nilai_transaksi;
+                        $grandTotal += $item->total;
                     @endphp
                     <tr>
                         <td>{{ $chunkIndex * 20 + $i + 1 }}</td>
                         <td>{{ $item->barang->nama_barang ?? '-' }}</td>
-                        <td>{{ $item->supplier->nama_supplier ?? '-' }}</td>
-                        <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</td>
-                        <td>{{ $item->jumlah }}</td>
-                        <td>Rp {{ number_format($item->harga_beli, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->total_harga_beli, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->total_nilai_transaksi, 0, ',', '.') }}</td>
-
+                        <td>{{ $item->supplier->nama ?? '-' }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->tanggal_transaksi)->format('d-m-Y') }}</td>
+                        <td>{{ $item->jumlah_pembelian }}</td>
+                        <td>Rp {{ number_format($item->total, 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -97,10 +88,8 @@
             @if ($loop->last)
                 <tfoot>
                     <tr>
-                        <td colspan="6">Total</td>
-                        <td>Rp {{ number_format($total_harga_beli, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($total_nilai_transaksi, 0, ',', '.') }}</td>
-                        <td></td>
+                        <td colspan="5">Grand Total</td>
+                        <td>Rp {{ number_format($grandTotal, 0, ',', '.') }}</td>
                     </tr>
                 </tfoot>
             @endif
@@ -110,7 +99,6 @@
             <div class="page-break"></div>
         @endif
     @endforeach
-
 </body>
 
 </html>
