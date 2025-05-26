@@ -20,88 +20,71 @@ class GrafikPenjualanController extends Controller
 
         if ($range === 'harian') {
             $tanggal = $request->input('tanggal');
-
             if ($tanggal) {
-                $label = Carbon::parse($tanggal)->format('l'); // e.g. Monday
-                $total = $query->whereDate('tanggal_transaksi', $tanggal)->sum('laba_bersih');
-
-                $data = collect([
-                    ['label' => $label, 'total_laba' => $total]
-                ]);
+                $label = Carbon::parse($tanggal)->translatedFormat('l');
+                $total = $query->whereDate('tanggal_transaksi', $tanggal)
+                               ->sum('laba_bruto');
+                $data = collect([['label' => $label, 'total_laba' => $total]]);
             } else {
-                $start = now()->startOfWeek(Carbon::MONDAY);
-                $end = now()->endOfWeek(Carbon::SUNDAY);
-
-                $result = $query->whereBetween('tanggal_transaksi', [$start, $end])
-                    ->get()
-                    ->groupBy(fn($item) => Carbon::parse($item->tanggal_transaksi)->format('l')) // Monday–Sunday
-                    ->map(fn($items, $label) => [
-                        'label' => $label,
-                        'total_laba' => $items->sum('laba_bersih'),
-                    ]);
-
-                $allDays = collect(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-
-                $data = $allDays->map(fn($day) => [
-                    'label' => $day,
-                    'total_laba' => $result[$day]['total_laba'] ?? 0,
+                $start = now()->startOfWeek();
+                $end   = now()->endOfWeek();
+                $group = $query->whereBetween('tanggal_transaksi', [$start, $end])
+                               ->get()
+                               ->groupBy(fn($t) => Carbon::parse($t->tanggal_transaksi)->translatedFormat('l'))
+                               ->map(fn($items, $day) => [
+                                   'label'     => $day,
+                                   'total_laba'=> $items->sum('laba_bruto'),
+                               ]);
+                $allDays = collect(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']);
+                $data = $allDays->map(fn($d) => [
+                    'label'      => $d,
+                    'total_laba' => $group[$d]['total_laba'] ?? 0,
                 ]);
             }
         }
-
         elseif ($range === 'bulanan') {
             $start = now()->startOfMonth();
-            $end = now()->endOfMonth();
-
-            $result = $query->whereBetween('tanggal_transaksi', [$start, $end])
-                ->get()
-                ->groupBy(fn($item) => 'Week ' . ceil(Carbon::parse($item->tanggal_transaksi)->day / 7))
-                ->map(fn($items, $label) => [
-                    'label' => $label,
-                    'total_laba' => $items->sum('laba_bersih'),
-                ]);
-
-            $weeks = collect(range(1, 5))->map(fn($i) => 'Week ' . $i);
-
-            $data = $weeks->map(fn($week) => [
-                'label' => $week,
-                'total_laba' => $result[$week]['total_laba'] ?? 0,
+            $end   = now()->endOfMonth();
+            $group = $query->whereBetween('tanggal_transaksi', [$start, $end])
+                           ->get()
+                           ->groupBy(fn($t) => 'Week '.ceil(Carbon::parse($t->tanggal_transaksi)->day/7))
+                           ->map(fn($items,$wk) => [
+                               'label'      => $wk,
+                               'total_laba' => $items->sum('laba_bruto'),
+                           ]);
+            $weeks = collect(range(1,5))->map(fn($i)=>"Week {$i}");
+            $data  = $weeks->map(fn($wk)=>[
+                'label'      => $wk,
+                'total_laba' => $group[$wk]['total_laba'] ?? 0,
             ]);
         }
-
         elseif ($range === 'tahunan') {
             $start = now()->subYears(4)->startOfYear();
-            $end = now()->endOfYear();
-
-            $result = $query->whereBetween('tanggal_transaksi', [$start, $end])
-                ->get()
-                ->groupBy(fn($item) => Carbon::parse($item->tanggal_transaksi)->year)
-                ->map(fn($items, $label) => [
-                    'label' => (string) $label,
-                    'total_laba' => $items->sum('laba_bersih'),
-                ]);
-
-            $years = collect(range(now()->year - 4, now()->year));
-
-            $data = $years->map(fn($year) => [
-                'label' => (string) $year,
-                'total_laba' => $result[$year]['total_laba'] ?? 0,
+            $end   = now()->endOfYear();
+            $group = $query->whereBetween('tanggal_transaksi', [$start, $end])
+                           ->get()
+                           ->groupBy(fn($t)=>Carbon::parse($t->tanggal_transaksi)->year)
+                           ->map(fn($items,$yr)=>[
+                               'label'      => (string)$yr,
+                               'total_laba' => $items->sum('laba_bruto'),
+                           ]);
+            $years = collect(range(now()->year-4, now()->year));
+            $data  = $years->map(fn($yr)=>[
+                'label'      => (string)$yr,
+                'total_laba' => $group[$yr]['total_laba'] ?? 0,
             ]);
         }
-
         elseif ($range === 'kustom') {
             $start = Carbon::parse($request->input('start_date'));
-            $end = Carbon::parse($request->input('end_date'));
-
-            $result = $query->whereBetween('tanggal_transaksi', [$start, $end])
-                ->get()
-                ->groupBy(fn($item) => Carbon::parse($item->tanggal_transaksi)->format('d M Y'))
-                ->map(fn($items, $label) => [
-                    'label' => $label,
-                    'total_laba' => $items->sum('laba_bersih'),
-                ]);
-
-            $data = $result->values();
+            $end   = Carbon::parse($request->input('end_date'));
+            $group = $query->whereBetween('tanggal_transaksi', [$start, $end])
+                           ->get()
+                           ->groupBy(fn($t)=>Carbon::parse($t->tanggal_transaksi)->format('d M Y'))
+                           ->map(fn($items,$lbl)=>[
+                               'label'      => $lbl,
+                               'total_laba' => $items->sum('laba_bruto'),
+                           ]);
+            $data = $group->values();
         }
 
         return response()->json($data);
@@ -110,37 +93,33 @@ class GrafikPenjualanController extends Controller
     public function grafikProdukTerlaris(Request $request)
     {
         $range = $request->input('range', 'harian');
-        $end = now();
-
-        $start = match ($range) {
-            'harian' => $request->input('tanggal')
-                ? Carbon::parse($request->input('tanggal'))->startOfDay()
-                : $end->copy()->startOfWeek(),
+        $end   = now();
+        $start = match($range) {
+            'harian'  => $request->input('tanggal')
+                          ? Carbon::parse($request->input('tanggal'))->startOfDay()
+                          : $end->copy()->startOfWeek(),
             'bulanan' => $end->copy()->startOfMonth(),
             'tahunan' => $end->copy()->startOfYear(),
-            'kustom' => Carbon::parse($request->input('start_date')),
-            default => $end->copy()->startOfWeek(),
+            'kustom'  => Carbon::parse($request->input('start_date')),
+            default   => $end->copy()->startOfWeek(),
         };
-
-        $end = match ($range) {
-            'harian' => $request->input('tanggal')
-                ? Carbon::parse($request->input('tanggal'))->endOfDay()
-                : $end->copy()->endOfDay(),
-            'kustom' => Carbon::parse($request->input('end_date')),
-            default => $end,
+        $end = match($range) {
+            'harian'  => $request->input('tanggal')
+                          ? Carbon::parse($request->input('tanggal'))->endOfDay()
+                          : $end->copy()->endOfWeek(),
+            'kustom'  => Carbon::parse($request->input('end_date')),
+            default   => $end,
         };
 
         $data = TransaksiPenjualan::with('barang')
             ->whereBetween('tanggal_transaksi', [$start, $end])
             ->get()
             ->groupBy('id_barang')
-            ->map(function ($items, $id_barang) {
-                return [
-                    'id_barang' => $id_barang,
-                    'label' => optional($items->first()->barang)->nama_barang ?? 'Tidak diketahui',
-                    'total_terjual' => $items->sum('jumlah'),
-                ];
-            })
+            ->map(fn($items, $bid) => [
+                'id_barang'    => $bid,
+                'label'        => optional($items->first()->barang)->nama_barang ?? '-',
+                'total_terjual'=> $items->sum('jumlah_penjualan'),
+            ])
             ->sortByDesc('total_terjual')
             ->take(5)
             ->values();

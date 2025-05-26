@@ -18,120 +18,81 @@ class GrafikPenjualan extends Component
 
     public function mount()
     {
-        $this->updateData();
-    }
-
-    public function updateData()
-    {
         $this->updateDataForToday();
     }
 
-    // Menampilkan Data untuk 7 Hari Terakhir
     public function updateDataForToday()
     {
-        $hariIni = Carbon::today();
-
-        // === Harian ===
-        $tanggalMulaiHarian = $hariIni->copy()->subDays(6);
-        $harian = TransaksiPenjualan::selectRaw('DATE(tanggal_transaksi) as tanggal, SUM(laba_bersih) as total_profit')
-            ->whereBetween('tanggal_transaksi', [$tanggalMulaiHarian, $hariIni])
-            ->groupBy('tanggal')
-            ->orderBy('tanggal')
+        $today = Carbon::today();
+        // Harian
+        $start = $today->copy()->subDays(6);
+        $rows = TransaksiPenjualan::selectRaw('DATE(tanggal_transaksi) as tgl, SUM(laba_bruto) as tot')
+            ->whereBetween('tanggal_transaksi', [$start, $today])
+            ->groupBy('tgl')
+            ->orderBy('tgl')
             ->get();
 
         $this->labelHarian = [];
-        $tempHarian = [];
-
+        $tmp = [];
         for ($i = 0; $i <= 6; $i++) {
-            $tgl = $tanggalMulaiHarian->copy()->addDays($i);
-            $label = $tgl->translatedFormat('l');
-            $tanggal = $tgl->format('Y-m-d');
-
-            $this->labelHarian[] = $label;
-            $found = $harian->firstWhere('tanggal', $tanggal);
-            $tempHarian[] = $found ? (float) $found->total_profit : 0;
+            $d = $start->copy()->addDays($i);
+            $this->labelHarian[] = $d->translatedFormat('l');
+            $row = $rows->firstWhere('tgl', $d->format('Y-m-d'));
+            $tmp[] = $row ? (float)$row->tot : 0;
         }
+        $this->profitHarian = $tmp;
 
-        $this->profitHarian = $tempHarian;
-
-        // === Mingguan ===
-        $tanggalMulaiMingguan = $hariIni->copy()->startOfMonth();
-        $mingguan = TransaksiPenjualan::selectRaw('WEEK(tanggal_transaksi, 3) as minggu_ke, SUM(laba_bersih) as total_profit')
-            ->whereBetween('tanggal_transaksi', [$tanggalMulaiMingguan, $hariIni])
-            ->groupBy('minggu_ke')
-            ->orderBy('minggu_ke')
-            ->get();
-
-        $this->labelMingguan = [];
-        $tempMingguan = [];
-
-        $start = $tanggalMulaiMingguan->copy()->startOfWeek(Carbon::MONDAY);
-        $end = $hariIni->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
-        $i = 1;
-
-        while ($start <= $end) {
-            $this->labelMingguan[] = "Minggu {$i}";
-            $found = $mingguan->firstWhere('minggu_ke', $start->isoWeek());
-            $tempMingguan[] = $found ? (float) $found->total_profit : 0;
-            $start->addWeek();
-            $i++;
+        // Mingguan (bulan ini)
+        $mStart = $today->copy()->startOfMonth();
+        $mRows = TransaksiPenjualan::selectRaw('WEEK(tanggal_transaksi,3) as wk, SUM(laba_bruto) as tot')
+            ->whereBetween('tanggal_transaksi', [$mStart, $today])
+            ->groupBy('wk')->orderBy('wk')->get();
+        $this->labelMingguan = []; $tmp = [];
+        $w = 1;
+        $wkStart = $mStart->copy()->startOfWeek();
+        while ($wkStart <= $today) {
+            $this->labelMingguan[] = "Minggu {$w}";
+            $r = $mRows->firstWhere('wk', $wkStart->isoWeek());
+            $tmp[] = $r ? (float)$r->tot : 0;
+            $wkStart->addWeek(); $w++;
         }
+        $this->profitMingguan = $tmp;
 
-        $this->profitMingguan = $tempMingguan;
-
-        // === Bulanan ===
-        $tanggalMulaiBulanan = $hariIni->copy()->startOfYear();
-        $bulanan = TransaksiPenjualan::selectRaw('MONTH(tanggal_transaksi) as bulan, SUM(laba_bersih) as total_profit')
-            ->whereBetween('tanggal_transaksi', [$tanggalMulaiBulanan, $hariIni])
-            ->groupBy('bulan')
-            ->orderBy('bulan')
-            ->get();
-
-        $this->labelBulanan = [];
-        $tempBulanan = [];
-
-        for ($i = 1; $i <= 12; $i++) {
-            $this->labelBulanan[] = Carbon::create()->month($i)->translatedFormat('F');
-            $found = $bulanan->firstWhere('bulan', $i);
-            $tempBulanan[] = $found ? (float) $found->total_profit : 0;
+        // Bulanan (tahun ini)
+        $yStart = $today->copy()->startOfYear();
+        $yRows = TransaksiPenjualan::selectRaw('MONTH(tanggal_transaksi) as bln, SUM(laba_bruto) as tot')
+            ->whereBetween('tanggal_transaksi', [$yStart, $today])
+            ->groupBy('bln')->get();
+        $this->labelBulanan=[]; $tmp=[];
+        for ($m=1;$m<=12;$m++){
+            $this->labelBulanan[] = Carbon::create()->month($m)->translatedFormat('F');
+            $r = $yRows->firstWhere('bln',$m);
+            $tmp[] = $r ? (float)$r->tot : 0;
         }
+        $this->profitBulanan = $tmp;
 
-        $this->profitBulanan = $tempBulanan;
-    }
+        // Produk terlaris harian
+        $pRows = TransaksiPenjualan::select('id_barang', DB::raw('SUM(jumlah_penjualan) as tot'))
+            ->whereBetween('tanggal_transaksi', [$start, $today])
+            ->groupBy('id_barang')->orderByDesc('tot')->take(5)->get();
+        $this->produkLabelHarian = $pRows->map(fn($i) => optional($i->barang)->nama_barang)->toArray();
+        $this->produkHarian = $pRows->pluck('tot')->map(fn($v)=>(int)$v)->toArray();
 
-    // Menampilkan Data untuk Bulan Lalu
-    public function updateDataForBulanLalu()
-    {
-        $hariIni = Carbon::today();
+        // Produk terlaris mingguan
+        $wkStart = $mStart->copy()->startOfWeek();
+        $pRows = TransaksiPenjualan::select('id_barang', DB::raw('SUM(jumlah_penjualan) as tot'))
+            ->whereBetween('tanggal_transaksi', [$wkStart, $today])
+            ->groupBy('id_barang')->orderByDesc('tot')->take(5)->get();
+        $this->produkLabelMingguan = $pRows->map(fn($i)=>optional($i->barang)->nama_barang)->toArray();
+        $this->produkMingguan = $pRows->pluck('tot')->map(fn($v)=>(int)$v)->toArray();
 
-        // Mendapatkan tanggal mulai dan akhir bulan lalu
-        $bulanLaluMulai = $hariIni->copy()->subMonth()->startOfMonth();
-        $bulanLaluAkhir = $hariIni->copy()->subMonth()->endOfMonth();
-
-        // === Bulan Lalu ===
-        $bulananLalu = TransaksiPenjualan::selectRaw('MONTH(tanggal_transaksi) as bulan, SUM(laba_bersih) as total_profit')
-            ->whereBetween('tanggal_transaksi', [$bulanLaluMulai, $bulanLaluAkhir])
-            ->groupBy('bulan')
-            ->orderBy('bulan')
-            ->get();
-
-        $this->labelBulanan = [];
-        $this->profitBulanan = [];
-
-        // Data bulan lalu
-        $this->labelBulanan[] = $bulanLaluMulai->translatedFormat('F Y');
-        $this->profitBulanan[] = $bulananLalu->sum('total_profit');
-
-        // Produk terlaris bulan lalu
-        $produkBulananLalu = TransaksiPenjualan::select('id_barang', DB::raw('SUM(jumlah) as total_terjual'))
-            ->whereBetween('tanggal_transaksi', [$bulanLaluMulai, $bulanLaluAkhir])
-            ->groupBy('id_barang')
-            ->orderByDesc('total_terjual')
-            ->take(5)
-            ->get();
-
-        $this->produkLabelBulanan = $produkBulananLalu->map(fn($item) => optional($item->barang)->nama_barang ?? 'Tidak diketahui')->toArray();
-        $this->produkBulanan = $produkBulananLalu->pluck('total_terjual')->map(fn($v) => (int) $v)->toArray();
+        // Produk terlaris bulanan
+        $bStart = $today->copy()->startOfMonth();
+        $pRows = TransaksiPenjualan::select('id_barang', DB::raw('SUM(jumlah_penjualan) as tot'))
+            ->whereBetween('tanggal_transaksi', [$bStart, $today])
+            ->groupBy('id_barang')->orderByDesc('tot')->take(5)->get();
+        $this->produkLabelBulanan = $pRows->map(fn($i)=>optional($i->barang)->nama_barang)->toArray();
+        $this->produkBulanan = $pRows->pluck('tot')->map(fn($v)=>(int)$v)->toArray();
     }
 
     public function render()

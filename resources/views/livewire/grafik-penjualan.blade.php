@@ -1,58 +1,53 @@
 <div x-data="{
-    renderAllCharts() {
-        const formatRupiah = value => 'Rp ' + value.toLocaleString('id-ID');
-
-        const chartOptions = (label, data, color, labelText, isRupiah = true) => ({
+    renderCharts() {
+        const formatRp = v => 'Rp ' + v.toLocaleString('id-ID');
+        const opts = (labels, data, label, isRupiah = true) => ({
             type: 'bar',
-            data: {
-                labels: label,
-                datasets: [{
-                    label: labelText,
-                    data: data,
-                    backgroundColor: color,
-                    borderRadius: 5,
-                }]
-            },
+            data: { labels, datasets: [{ label, data, borderRadius: 5 }] },
             options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: value => isRupiah ? formatRupiah(value) : value
-                        }
-                    }
-                }
+                scales: { y: { beginAtZero: true, ticks: { callback: val => isRupiah ? formatRp(val) : val } } }
             }
         });
+        window.chartHarian && chartHarian.destroy();
+        window.chartMingguan && chartMingguan.destroy();
+        window.chartBulanan && chartBulanan.destroy();
+        window.chartProdHarian && chartProdHarian.destroy();
+        window.chartProdMingguan && chartProdMingguan.destroy();
+        window.chartProdBulanan && chartProdBulanan.destroy();
 
-        // Hancurkan chart lama jika ada
-        if (window.chartHarian) chartHarian.destroy();
-        if (window.chartMingguan) chartMingguan.destroy();
-        if (window.chartBulanan) chartBulanan.destroy();
+        chartHarian = new Chart($refs.harian, opts(@js($labelHarian), @js($profitHarian), 'Profit Harian'));
+        chartMingguan = new Chart($refs.mingguan, opts(@js($labelMingguan), @js($profitMingguan), 'Profit Mingguan'));
+        chartBulanan = new Chart($refs.bulanan, opts(@js($labelBulanan), @js($profitBulanan), 'Profit Bulanan'));
 
-        if (window.chartProdukHarian) chartProdukHarian.destroy();
-        if (window.chartProdukMingguan) chartProdukMingguan.destroy();
-        if (window.chartProdukBulanan) chartProdukBulanan.destroy();
-
-        // Render chart profit
-        chartHarian = new Chart(this.$refs.chartHarian, chartOptions(@js($labelHarian), @js($profitHarian), 'rgba(75, 192, 192, 0.6)', 'Profit Harian'));
-        chartMingguan = new Chart(this.$refs.chartMingguan, chartOptions(@js($labelMingguan), @js($profitMingguan), 'rgba(153, 102, 255, 0.6)', 'Profit Mingguan'));
-        chartBulanan = new Chart(this.$refs.chartBulanan, chartOptions(@js($labelBulanan), @js($profitBulanan), 'rgba(255, 205, 86, 0.6)', 'Profit Bulanan'));
-
-        // Render chart produk terlaris (tanpa format Rp)
-        chartProdukHarian = new Chart(this.$refs.chartProdukHarian, chartOptions(@js($produkLabelHarian), @js($produkHarian), 'rgba(255, 99, 132, 0.6)', 'Produk Terlaris Harian', false));
-        chartProdukMingguan = new Chart(this.$refs.chartProdukMingguan, chartOptions(@js($produkLabelMingguan), @js($produkMingguan), 'rgba(54, 162, 235, 0.6)', 'Produk Terlaris Mingguan', false));
-        chartProdukBulanan = new Chart(this.$refs.chartProdukBulanan, chartOptions(@js($produkLabelBulanan), @js($produkBulanan), 'rgba(255, 159, 64, 0.6)', 'Produk Terlaris Bulanan', false));
+        chartProdHarian = new Chart($refs.prodHarian, opts(@js($produkLabelHarian), @js($produkHarian), 'Terlaris Harian', false));
+        chartProdMingguan = new Chart($refs.prodMingguan, opts(@js($produkLabelMingguan), @js($produkMingguan), 'Terlaris Mingguan', false));
+        chartProdBulanan = new Chart($refs.prodBulanan, opts(@js($produkLabelBulanan), @js($produkBulanan), 'Terlaris Bulanan', false));
     }
-}" x-init="renderAllCharts()">
-    <div class="mb-6 max-w-sm">
-        <label class="block font-medium mb-1">Pilih Rentang Waktu</label>
-        <select id="chartRangeSelect" class="w-full border px-4 py-2 rounded" wire:change="updateDataForBulanLalu">
-            <option value="harian">7 Hari Terakhir</option>
-            <option value="mingguan">Bulan Ini</option>
-            <option value="bulanan">Tahun Ini</option>
-            <option value="bulanLalu">Bulan Lalu</option>
-        </select>
+}" x-init="renderCharts()">
+    <div class="grid grid-cols-2 gap-6">
+        <div>
+            <label>Profit Harian</label>
+            <canvas x-ref="harian"></canvas>
+        </div>
+        <div>
+            <label>Profit Mingguan</label>
+            <canvas x-ref="mingguan"></canvas>
+        </div>
+        <div>
+            <label>Profit Bulanan</label>
+            <canvas x-ref="bulanan"></canvas>
+        </div>
+        <div>
+            <label>Produk Harian</label>
+            <canvas x-ref="prodHarian"></canvas>
+        </div>
+        <div>
+            <label>Produk Mingguan</label>
+            <canvas x-ref="prodMingguan"></canvas>
+        </div>
+        <div>
+            <label>Produk Bulanan</label>
+            <canvas x-ref="prodBulanan"></canvas>
+        </div>
     </div>
 </div>

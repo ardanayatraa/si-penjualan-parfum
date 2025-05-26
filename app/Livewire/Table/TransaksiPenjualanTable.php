@@ -28,8 +28,7 @@ class TransaksiPenjualanTable extends DataTableComponent
                 ->sortable(),
 
             Column::make('Kasir', 'kasir.username')
-                ->sortable()
-                ->format(fn($value, $row) => $row->kasir->name ?? '-'),
+                ->sortable(),
 
             Column::make('Barang', 'barang.nama_barang')
                 ->sortable()

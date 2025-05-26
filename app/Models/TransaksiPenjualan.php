@@ -27,10 +27,12 @@ class TransaksiPenjualan extends Model
     protected $casts = [
         'tanggal_transaksi' => 'datetime',
     ];
+
     public function kasir()
     {
-        return $this->belongsTo(User::class, 'id_kasir');
+        return $this->belongsTo(User::class, 'id_kasir')->where('level', 'kasir');
     }
+
 
     public function barang()
     {
