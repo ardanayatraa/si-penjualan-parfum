@@ -51,3 +51,80 @@
         </div>
     </div>
 </div>
+
+
+<script>
+    function formatRp(value) {
+        return 'Rp ' + value.toLocaleString('id-ID');
+    }
+
+    function chartOptions(labels, data, labelText, isRupiah = true) {
+        return {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: labelText,
+                    data,
+                    borderRadius: 5,
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return isRupiah ? formatRp(value) : value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const v = context.parsed.y;
+                                return isRupiah ? formatRp(v) : v;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('grafik', () => ({
+            init() {
+                // destruk chart lama
+                window.chartHarian && chartHarian.destroy();
+                window.chartMingguan && chartMingguan.destroy();
+                window.chartBulanan && chartBulanan.destroy();
+
+                // buat chart baru dengan Rp format
+                chartHarian = new Chart(this.$refs.harian, chartOptions(
+                    @js($labelHarian),
+                    @js($profitHarian),
+                    'Profit Harian',
+                    true // true → format Rupiah
+                ));
+
+                chartMingguan = new Chart(this.$refs.mingguan, chartOptions(
+                    @js($labelMingguan),
+                    @js($profitMingguan),
+                    'Profit Mingguan',
+                    true
+                ));
+
+                chartBulanan = new Chart(this.$refs.bulanan, chartOptions(
+                    @js($labelBulanan),
+                    @js($profitBulanan),
+                    'Profit Bulanan',
+                    true
+                ));
+            }
+        }));
+    });
+</script>

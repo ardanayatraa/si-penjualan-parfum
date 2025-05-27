@@ -26,7 +26,7 @@
                     <select wire:model.defer="id_supplier" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Supplier --</option>
                         @foreach ($listSupplier as $s)
-                            <option value="{{ $s->id }}">{{ $s->nama }}</option>
+                            <option value="{{ $s->id }}">{{ $s->nama_supplier }}</option>
                         @endforeach
                     </select>
                     @error('id_supplier')
