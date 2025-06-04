@@ -9,7 +9,14 @@ return new class extends Migration {
     {
         Schema::create('barang', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('id_supplier');
+            $table->foreign('id_supplier')
+                  ->references('id_supplier')
+                  ->on('supplier')
+                  ->cascadeOnUpdate()
+                  ->cascadeOnDelete();
             $table->string('nama_barang', 30);
+            $table->string('satuan', 20);
             $table->integer('harga_beli');
             $table->integer('harga_jual');
             $table->integer('stok')->default(0);

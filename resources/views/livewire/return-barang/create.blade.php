@@ -1,3 +1,4 @@
+<!-- resources/views/livewire/return-barang/create.blade.php -->
 <div>
     <x-button wire:click="$set('open', true)" class="bg-green-600 hover:bg-green-700">
         Tambah Return Barang
@@ -7,13 +8,14 @@
         <x-slot name="title">Tambah Return Barang</x-slot>
         <x-slot name="content">
             <div class="flex flex-col gap-4">
-
                 <div>
                     <x-label value="Barang" />
                     <select wire:model.defer="id_barang" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Barang --</option>
                         @foreach ($listBarang as $b)
-                            <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
+                            <option value="{{ $b->id }}">
+                                {{ $b->nama_barang }} (Stok: {{ $b->stok }})
+                            </option>
                         @endforeach
                     </select>
                     @error('id_barang')
@@ -36,7 +38,8 @@
 
                 <div>
                     <x-label value="Jumlah" />
-                    <x-input type="number" wire:model.defer="jumlah" min="1" />
+                    <x-input type="number" wire:model.lazy="jumlah" min="1"
+                        class="w-full border-gray-300 rounded-md" />
                     @error('jumlah')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -52,12 +55,12 @@
 
                 <div>
                     <x-label value="Tanggal Return" />
-                    <x-input type="date" wire:model.defer="tanggal_return" />
+                    <x-input type="date" wire:model.defer="tanggal_return"
+                        class="w-full border-gray-300 rounded-md" />
                     @error('tanggal_return')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
-
             </div>
         </x-slot>
         <x-slot name="footer">

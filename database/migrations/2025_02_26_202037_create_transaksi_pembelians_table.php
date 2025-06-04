@@ -12,8 +12,6 @@ return new class extends Migration {
             $table->foreignId('id_barang')
                   ->constrained('barang')
                   ->onDelete('restrict');
-            $table->foreignId('id_supplier')
-                  ;
             $table->date('tanggal_transaksi');
             $table->integer('jumlah_pembelian')->default(1);
             $table->decimal('total', 15, 2)->default(0);

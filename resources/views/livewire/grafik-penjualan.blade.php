@@ -1,65 +1,10 @@
 <div x-data="{
     renderCharts() {
-        const formatRp = v => 'Rp ' + v.toLocaleString('id-ID');
-        const opts = (labels, data, label, isRupiah = true) => ({
-            type: 'bar',
-            data: { labels, datasets: [{ label, data, borderRadius: 5 }] },
-            options: {
-                scales: { y: { beginAtZero: true, ticks: { callback: val => isRupiah ? formatRp(val) : val } } }
-            }
-        });
-        window.chartHarian && chartHarian.destroy();
-        window.chartMingguan && chartMingguan.destroy();
-        window.chartBulanan && chartBulanan.destroy();
-        window.chartProdHarian && chartProdHarian.destroy();
-        window.chartProdMingguan && chartProdMingguan.destroy();
-        window.chartProdBulanan && chartProdBulanan.destroy();
+        // Format Rupiah
+        const formatRp = value => 'Rp ' + value.toLocaleString('id-ID');
 
-        chartHarian = new Chart($refs.harian, opts(@js($labelHarian), @js($profitHarian), 'Profit Harian'));
-        chartMingguan = new Chart($refs.mingguan, opts(@js($labelMingguan), @js($profitMingguan), 'Profit Mingguan'));
-        chartBulanan = new Chart($refs.bulanan, opts(@js($labelBulanan), @js($profitBulanan), 'Profit Bulanan'));
-
-        chartProdHarian = new Chart($refs.prodHarian, opts(@js($produkLabelHarian), @js($produkHarian), 'Terlaris Harian', false));
-        chartProdMingguan = new Chart($refs.prodMingguan, opts(@js($produkLabelMingguan), @js($produkMingguan), 'Terlaris Mingguan', false));
-        chartProdBulanan = new Chart($refs.prodBulanan, opts(@js($produkLabelBulanan), @js($produkBulanan), 'Terlaris Bulanan', false));
-    }
-}" x-init="renderCharts()">
-    <div class="grid grid-cols-2 gap-6">
-        <div>
-            <label>Profit Harian</label>
-            <canvas x-ref="harian"></canvas>
-        </div>
-        <div>
-            <label>Profit Mingguan</label>
-            <canvas x-ref="mingguan"></canvas>
-        </div>
-        <div>
-            <label>Profit Bulanan</label>
-            <canvas x-ref="bulanan"></canvas>
-        </div>
-        <div>
-            <label>Produk Harian</label>
-            <canvas x-ref="prodHarian"></canvas>
-        </div>
-        <div>
-            <label>Produk Mingguan</label>
-            <canvas x-ref="prodMingguan"></canvas>
-        </div>
-        <div>
-            <label>Produk Bulanan</label>
-            <canvas x-ref="prodBulanan"></canvas>
-        </div>
-    </div>
-</div>
-
-
-<script>
-    function formatRp(value) {
-        return 'Rp ' + value.toLocaleString('id-ID');
-    }
-
-    function chartOptions(labels, data, labelText, isRupiah = true) {
-        return {
+        // Opsi umum untuk Chart.js
+        const chartOpts = (labels, data, labelText, isRupiah = true) => ({
             type: 'bar',
             data: {
                 labels,
@@ -67,64 +12,134 @@
                     label: labelText,
                     data,
                     borderRadius: 5,
+                    backgroundColor: '#3B82F6'
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            callback: function(value) {
-                                return isRupiah ? formatRp(value) : value;
-                            }
+                            callback: val => isRupiah ? formatRp(val) : val
                         }
                     }
                 },
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
-                                const v = context.parsed.y;
+                            label: ctx => {
+                                const v = ctx.parsed.y;
                                 return isRupiah ? formatRp(v) : v;
                             }
                         }
                     }
                 }
             }
-        };
+        });
+
+        // Hancurkan chart yang sudah ada (jika ada)
+        if (window.chartHarian) window.chartHarian.destroy();
+        if (window.chartMingguan) window.chartMingguan.destroy();
+        if (window.chartBulanan) window.chartBulanan.destroy();
+        if (window.chartProdHarian) window.chartProdHarian.destroy();
+        if (window.chartProdMingguan) window.chartProdMingguan.destroy();
+        if (window.chartProdBulanan) window.chartProdBulanan.destroy();
+
+        // 1) Chart Profit Harian
+        chartHarian = new Chart(this.$refs.harian, chartOpts(
+            @js($labelHarian),
+            @js($profitHarian),
+            'Profit Harian',
+            true
+        ));
+
+        // 2) Chart Profit Mingguan
+        chartMingguan = new Chart(this.$refs.mingguan, chartOpts(
+            @js($labelMingguan),
+            @js($profitMingguan),
+            'Profit Mingguan',
+            true
+        ));
+
+        // 3) Chart Profit Bulanan
+        chartBulanan = new Chart(this.$refs.bulanan, chartOpts(
+            @js($labelBulanan),
+            @js($profitBulanan),
+            'Profit Bulanan',
+            true
+        ));
+
+        // 4) Chart Produk Terlaris Harian (hanya angka, bukan Rupiah)
+        chartProdHarian = new Chart(this.$refs.prodHarian, chartOpts(
+            @js($produkLabelHarian),
+            @js($produkHarian),
+            'Top 5 Produk Harian',
+            false
+        ));
+
+        // 5) Chart Produk Terlaris Mingguan
+        chartProdMingguan = new Chart(this.$refs.prodMingguan, chartOpts(
+            @js($produkLabelMingguan),
+            @js($produkMingguan),
+            'Top 5 Produk Mingguan',
+            false
+        ));
+
+        // 6) Chart Produk Terlaris Bulanan
+        chartProdBulanan = new Chart(this.$refs.prodBulanan, chartOpts(
+            @js($produkLabelBulanan),
+            @js($produkBulanan),
+            'Top 5 Produk Bulanan',
+            false
+        ));
     }
+}" x-init="renderCharts()">
 
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('grafik', () => ({
-            init() {
-                // destruk chart lama
-                window.chartHarian && chartHarian.destroy();
-                window.chartMingguan && chartMingguan.destroy();
-                window.chartBulanan && chartBulanan.destroy();
+    <div class="space-y-8">
+        {{-- Bagian Profit --}}
+        <div class="grid grid-cols-3 gap-6">
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold mb-2">Profit Harian (7 hari)</h3>
+                <div class="h-48">
+                    <canvas x-ref="harian"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold mb-2">Profit Mingguan (bulan ini)</h3>
+                <div class="h-48">
+                    <canvas x-ref="mingguan"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold mb-2">Profit Bulanan (tahun ini)</h3>
+                <div class="h-48">
+                    <canvas x-ref="bulanan"></canvas>
+                </div>
+            </div>
+        </div>
 
-                // buat chart baru dengan Rp format
-                chartHarian = new Chart(this.$refs.harian, chartOptions(
-                    @js($labelHarian),
-                    @js($profitHarian),
-                    'Profit Harian',
-                    true // true → format Rupiah
-                ));
-
-                chartMingguan = new Chart(this.$refs.mingguan, chartOptions(
-                    @js($labelMingguan),
-                    @js($profitMingguan),
-                    'Profit Mingguan',
-                    true
-                ));
-
-                chartBulanan = new Chart(this.$refs.bulanan, chartOptions(
-                    @js($labelBulanan),
-                    @js($profitBulanan),
-                    'Profit Bulanan',
-                    true
-                ));
-            }
-        }));
-    });
-</script>
+        {{-- Bagian Produk Terlaris --}}
+        <div class="grid grid-cols-3 gap-6">
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold mb-2">Top 5 Produk Harian</h3>
+                <div class="h-48">
+                    <canvas x-ref="prodHarian"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold mb-2">Top 5 Produk Mingguan</h3>
+                <div class="h-48">
+                    <canvas x-ref="prodMingguan"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold mb-2">Top 5 Produk Bulanan</h3>
+                <div class="h-48">
+                    <canvas x-ref="prodBulanan"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

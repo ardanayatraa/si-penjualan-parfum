@@ -1,12 +1,34 @@
+<!-- resources/views/livewire/barang/update.blade.php -->
 <div>
     <x-dialog-modal wire:model="open">
         <x-slot name="title">Edit Barang</x-slot>
         <x-slot name="content">
             <div class="flex flex-col gap-4">
                 <div>
+                    <x-label for="id_supplier" value="Supplier" />
+                    <select id="id_supplier" wire:model.defer="id_supplier" class="w-full border-gray-300 rounded-md">
+                        <option value="">-- Pilih Supplier --</option>
+                        @foreach ($listSupplier as $s)
+                            <option value="{{ $s->id_supplier }}">{{ $s->nama_supplier }}</option>
+                        @endforeach
+                    </select>
+                    @error('id_supplier')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div>
                     <x-label for="nama_barang" value="Nama Barang" />
                     <x-input id="nama_barang" wire:model.defer="nama_barang" />
                     @error('nama_barang')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div>
+                    <x-label for="satuan" value="Satuan" />
+                    <x-input id="satuan" type="text" wire:model.defer="satuan" />
+                    @error('satuan')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>

@@ -19,6 +19,21 @@
                     id="tab-pembelian">
                     Laporan Pembelian
                 </button>
+                <button onclick="showTab('stok')"
+                    class="tab-btn px-4 py-2 text-sm font-medium text-gray-700 dark:text-white border-b-2"
+                    id="tab-stok">
+                    Laporan Stok
+                </button>
+                <button onclick="showTab('labarugi')"
+                    class="tab-btn px-4 py-2 text-sm font-medium text-gray-700 dark:text-white border-b-2"
+                    id="tab-labarugi">
+                    Laporan Laba Rugi
+                </button>
+                <button onclick="showTab('neraca')"
+                    class="tab-btn px-4 py-2 text-sm font-medium text-gray-700 dark:text-white border-b-2"
+                    id="tab-neraca">
+                    Laporan Neraca
+                </button>
             </div>
 
             <div class="p-4 sm:p-6 space-y-6">
@@ -31,6 +46,21 @@
                 <div id="content-pembelian" class="hidden">
                     @livewire('table.laporan-pembelian-table')
                 </div>
+
+                <!-- Stok -->
+                <div id="content-stok" class="hidden">
+                    @livewire('table.laporan-stok-table')
+                </div>
+
+                <!-- Laba Rugi -->
+                <div id="content-labarugi" class="hidden">
+                    {{-- @livewire('table.laporan-laba-rugi-table') --}}
+                </div>
+
+                <!-- Neraca -->
+                <div id="content-neraca" class="hidden">
+                    {{-- @livewire('table.laporan-neraca-table') --}}
+                </div>
             </div>
         </div>
     </div>
@@ -38,7 +68,7 @@
     <!-- Simple Tab Script -->
     <script>
         function showTab(tab) {
-            const tabs = ['penjualan', 'pembelian'];
+            const tabs = ['penjualan', 'pembelian', 'stok', 'labarugi', 'neraca'];
 
             tabs.forEach(t => {
                 document.getElementById('content-' + t).classList.add('hidden');

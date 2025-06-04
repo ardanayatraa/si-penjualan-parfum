@@ -40,6 +40,10 @@ class Create extends Component
         if ($b) {
             $this->harga_jual  = $b->harga_jual;
             $this->harga_pokok = $b->harga_beli;
+            // reset jumlah_penjualan jika stok berubah
+            if ($this->jumlah_penjualan > $b->stok) {
+                $this->jumlah_penjualan = $b->stok;
+            }
         } else {
             $this->harga_jual = $this->harga_pokok = 0;
         }
@@ -48,6 +52,13 @@ class Create extends Component
 
     public function updatedJumlahPenjualan($value)
     {
+        $b = Barang::find($this->id_barang);
+        if ($b && $value > $b->stok) {
+            $this->addError('jumlah_penjualan', 'Jumlah penjualan tidak boleh melebihi stok ('. $b->stok .').');
+            $this->jumlah_penjualan = $b->stok;
+        } else {
+            $this->resetErrorBag('jumlah_penjualan');
+        }
         $this->recalculate();
     }
 
@@ -61,10 +72,13 @@ class Create extends Component
         // 1) Subtotal = harga_jual * jumlah_penjualan
         $this->subtotal = $this->harga_jual * $this->jumlah_penjualan;
 
-        // 2) Laba bruto = subtotal - (harga_pokok * jumlah_penjualan)
-        $this->laba_bruto = max(0, $this->subtotal - ($this->harga_pokok * $this->jumlah_penjualan));
+        // 2) Harga pokok total = harga_pokok * jumlah_penjualan
+        $hargaPokokTotal = $this->harga_pokok * $this->jumlah_penjualan;
 
-        // 3) Total harga = subtotal + pajak
+        // 3) Laba bruto = subtotal - harga pokok total
+        $this->laba_bruto = max(0, $this->subtotal - $hargaPokokTotal);
+
+        // 4) Total harga = subtotal + pajak
         if ($p = PajakTransaksi::find($this->id_pajak)) {
             $this->total_harga = round($this->subtotal * (1 + $p->presentase / 100), 2);
         } else {
@@ -76,6 +90,21 @@ class Create extends Component
     {
         $this->validate();
 
+        $barang = Barang::find($this->id_barang);
+        if (! $barang) {
+            $this->addError('id_barang', 'Barang tidak ditemukan.');
+            return;
+        }
+
+        if ($this->jumlah_penjualan > $barang->stok) {
+            $this->addError('jumlah_penjualan', 'Jumlah penjualan tidak boleh melebihi stok ('. $barang->stok .').');
+            return;
+        }
+
+        // 1. Kurangi stok barang sesuai jumlah_penjualan
+        $barang->decrement('stok', $this->jumlah_penjualan);
+
+        // 2. Simpan transaksi penjualan
         TransaksiPenjualan::create([
             'id_kasir'           => Auth::id(),
             'id_barang'          => $this->id_barang,
@@ -99,6 +128,7 @@ class Create extends Component
             'laba_bruto',
             'total_harga',
         ]);
+
         $this->dispatch('refreshDatatable');
         $this->open = false;
     }

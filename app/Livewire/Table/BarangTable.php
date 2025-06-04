@@ -26,7 +26,15 @@ class BarangTable extends DataTableComponent
             Column::make('ID', 'id')
                 ->sortable(),
 
+            Column::make('Supplier', 'supplier.nama_supplier')
+                ->sortable()
+                ->searchable(),
+
             Column::make('Nama Barang', 'nama_barang')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Satuan', 'satuan')
                 ->sortable(),
 
             Column::make('Harga Beli', 'harga_beli')
@@ -42,21 +50,15 @@ class BarangTable extends DataTableComponent
 
             Column::make('Aksi', 'id')
                 ->label(fn($row) => view('components.link-action', [
-                    'id'         => $row->id,
-                    'editEvent'  => 'edit',
-                    'deleteEvent'=> 'delete',
+                    'id'        => $row->id,
+                    'editEvent' => 'editBarang',
                 ]))
                 ->html(),
         ];
     }
 
-    public function edit($id)
+    public function editBarang($id)
     {
-        $this->dispatch('edit', $id);
-    }
-
-    public function delete($id)
-    {
-        $this->dispatch('delete', $id);
+        $this->dispatch('editBarang', $id);
     }
 }

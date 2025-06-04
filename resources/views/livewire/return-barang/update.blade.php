@@ -1,15 +1,21 @@
+<!-- resources/views/livewire/return-barang/update.blade.php -->
+
 <div>
     <x-dialog-modal wire:model="open">
         <x-slot name="title">Edit Return Barang</x-slot>
         <x-slot name="content">
             <div class="flex flex-col gap-4">
 
+                {{-- Pilih Barang --}}
                 <div>
                     <x-label value="Barang" />
                     <select wire:model.defer="id_barang" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Barang --</option>
                         @foreach ($listBarang as $b)
-                            <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
+                            <option value="{{ $b->id }}">
+                                {{ $b->nama_barang }}
+                                (Stok tersedia: {{ $b->stok + $originalJumlah }})
+                            </option>
                         @endforeach
                     </select>
                     @error('id_barang')
@@ -17,12 +23,13 @@
                     @enderror
                 </div>
 
+                {{-- Pilih Supplier --}}
                 <div>
                     <x-label value="Supplier" />
                     <select wire:model.defer="id_supplier" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Supplier --</option>
                         @foreach ($listSupplier as $s)
-                            <option value="{{ $s->id }}">{{ $s->nama_supplier }}</option>
+                            <option value="{{ $s->id_supplier }}">{{ $s->nama_supplier }}</option>
                         @endforeach
                     </select>
                     @error('id_supplier')
@@ -30,14 +37,17 @@
                     @enderror
                 </div>
 
+                {{-- Jumlah --}}
                 <div>
                     <x-label value="Jumlah" />
-                    <x-input type="number" wire:model.defer="jumlah" min="1" />
+                    <x-input type="number" wire:model.lazy="jumlah" min="1" max="{{ $availableStok }}"
+                        class="w-full border-gray-300 rounded-md" />
                     @error('jumlah')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
 
+                {{-- Alasan Return --}}
                 <div>
                     <x-label value="Alasan Return" />
                     <textarea wire:model.defer="alasan" class="w-full rounded-md border-gray-300 p-2"></textarea>
@@ -46,9 +56,11 @@
                     @enderror
                 </div>
 
+                {{-- Tanggal Return --}}
                 <div>
                     <x-label value="Tanggal Return" />
-                    <x-input type="date" wire:model.defer="tanggal_return" />
+                    <x-input type="date" wire:model.defer="tanggal_return"
+                        class="w-full border-gray-300 rounded-md" />
                     @error('tanggal_return')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror

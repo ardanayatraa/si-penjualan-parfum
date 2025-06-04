@@ -3,10 +3,9 @@
         <x-slot name="title">Edit Transaksi Pembelian</x-slot>
         <x-slot name="content">
             <div class="flex flex-col gap-4">
-
                 <div>
                     <x-label value="Barang" />
-                    <select wire:model.live="id_barang" class="w-full border-gray-300 rounded-md">
+                    <select wire:model="id_barang" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Barang --</option>
                         @foreach ($listBarang as $b)
                             <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
@@ -19,7 +18,7 @@
 
                 <div>
                     <x-label value="Supplier" />
-                    <select wire:model.live="id_supplier" class="w-full border-gray-300 rounded-md">
+                    <select wire:model="id_supplier" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Supplier --</option>
                         @foreach ($listSupplier as $s)
                             <option value="{{ $s->id_supplier }}">{{ $s->nama_supplier }}</option>
@@ -32,7 +31,7 @@
 
                 <div>
                     <x-label value="Tanggal Transaksi" />
-                    <x-input type="date" wire:model.live="tanggal_transaksi" />
+                    <x-input type="date" wire:model.defer="tanggal_transaksi" class="w-full" />
                     @error('tanggal_transaksi')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -41,17 +40,16 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <x-label value="Jumlah Pembelian" />
-                        <x-input type="number" wire:model.live="jumlah_pembelian" min="1" />
+                        <x-input type="number" wire:model="jumlah_pembelian" min="1" class="w-full" />
                         @error('jumlah_pembelian')
                             <span class="text-red-500 text-sm">{{ $message }}</span>
                         @enderror
                     </div>
                     <div>
                         <x-label value="Total (Rp)" />
-                        <x-input type="number" wire:model="total" readonly />
+                        <x-input type="number" wire:model="total" readonly class="w-full bg-gray-100" />
                     </div>
                 </div>
-
             </div>
         </x-slot>
         <x-slot name="footer">

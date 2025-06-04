@@ -25,7 +25,7 @@ class LaporanPembelianTable extends DataTableComponent
     public function builder(): Builder
     {
         return TransaksiPembelian::query()
-            ->with(['barang', 'supplier']);
+            ->with(['barang.supplier']);
     }
 
     public function filters(): array
@@ -57,7 +57,7 @@ class LaporanPembelianTable extends DataTableComponent
     public function exportPdf()
     {
         $selected = $this->getSelected();
-        $query = TransaksiPembelian::with(['barang', 'supplier'])
+        $query = TransaksiPembelian::with(['barang.supplier'])
             ->when($selected, fn($q) => $q->whereIn('id', $selected));
 
         if ($this->startDate && $this->endDate) {
@@ -93,12 +93,14 @@ class LaporanPembelianTable extends DataTableComponent
         return [
             Column::make('ID', 'id')
                 ->sortable(),
- 
-            Column::make('Barang', 'barang.nama_barang')
-                ->sortable(),
 
-            Column::make('Supplier', 'supplier.nama_supplier')
-                ->sortable(),
+            Column::make('Barang', 'barang.nama_barang')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Supplier', 'barang.supplier.nama_supplier')
+                ->sortable()
+                ->searchable(),
 
             Column::make('Tanggal Transaksi', 'tanggal_transaksi')
                 ->sortable()

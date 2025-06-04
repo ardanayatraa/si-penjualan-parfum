@@ -9,59 +9,96 @@ use App\Models\Supplier;
 
 class Create extends Component
 {
-    public $open = false;
-    public $id_barang, $id_supplier, $tanggal_transaksi, $jumlah_pembelian = 1, $total = 0;
-    public $harga_beli = 0;
+    public $open            = false;
+    public $id_supplier;
+    public $tanggal_transaksi;
+    public $quantities      = []; // [barang_id => jumlah]
+    public $search          = '';
+    public $listSupplier    = [];
 
-    protected $rules = [
-        'id_barang'           => 'required|exists:barang,id',
-        'id_supplier'         => 'required|exists:supplier,id_supplier',
-        'tanggal_transaksi'   => 'required|date',
-        'jumlah_pembelian'    => 'required|integer|min:1',
-        // total dihitung otomatis
-    ];
-
-
-    public function updatedIdBarang()
+    public function mount()
     {
-        if ($b = Barang::find($this->id_barang)) {
-            $this->harga_beli = $b->harga_beli;
-            $this->recalculate();
+        $this->listSupplier = Supplier::all();
+    }
+
+    public function updatedIdSupplier($value)
+    {
+        // inisialisasi quantities untuk setiap barang baru
+        $this->quantities = [];
+        $barangs = Barang::where('id_supplier', $value)->pluck('id');
+        foreach ($barangs as $id) {
+            $this->quantities[$id] = 0;
         }
     }
 
-    public function updatedJumlahPembelian()
+    public function updatedSearch()
     {
-        $this->recalculate();
+        // tidak perlu inisialisasi ulang quantities di sini
     }
 
-    private function recalculate()
+    public function increase($barangId)
     {
-        $this->total = round($this->harga_beli * $this->jumlah_pembelian, 2);
+        $this->quantities[$barangId] = ($this->quantities[$barangId] ?? 0) + 1;
+    }
+
+    public function decrease($barangId)
+    {
+        if (($this->quantities[$barangId] ?? 0) > 0) {
+            $this->quantities[$barangId]--;
+        }
     }
 
     public function store()
     {
-        $this->validate();
-
-        TransaksiPembelian::create([
-            'id_barang'         => $this->id_barang,
-            'id_supplier'       => $this->id_supplier,
-            'tanggal_transaksi' => $this->tanggal_transaksi,
-            'jumlah_pembelian'  => $this->jumlah_pembelian,
-            'total'             => $this->total,
+        $this->validate([
+            'id_supplier'       => 'required|exists:supplier,id_supplier',
+            'tanggal_transaksi' => 'required|date',
         ]);
 
-        $this->reset(['id_barang','id_supplier','tanggal_transaksi','jumlah_pembelian','total','harga_beli']);
+        $barangDipilih = collect($this->listBarang)
+            ->filter(fn($b) => ($this->quantities[$b->id] ?? 0) > 0);
+
+        if ($barangDipilih->isEmpty()) {
+            $this->addError('quantities', 'Minimal satu barang harus diisi jumlah > 0.');
+            return;
+        }
+
+        foreach ($barangDipilih as $barang) {
+            $jumlah = $this->quantities[$barang->id];
+            $total  = $barang->harga_beli * $jumlah;
+
+            TransaksiPembelian::create([
+                'id_barang'         => $barang->id,
+                'tanggal_transaksi' => $this->tanggal_transaksi,
+                'jumlah_pembelian'  => $jumlah,
+                'total'             => $total,
+            ]);
+
+            $barang->increment('stok', $jumlah);
+        }
+
+        $this->reset(['id_supplier', 'tanggal_transaksi', 'quantities', 'search']);
         $this->dispatch('refreshDatatable');
         $this->open = false;
+    }
+
+    public function getListBarangProperty()
+    {
+        if (! $this->id_supplier) {
+            return collect();
+        }
+
+        return Barang::where('id_supplier', $this->id_supplier)
+            ->where('nama_barang', 'like', '%' . $this->search . '%')
+            ->orderBy('nama_barang')
+            ->get();
     }
 
     public function render()
     {
         return view('livewire.transaksi-pembelian.create', [
-            'listBarang'   => Barang::all(),
-            'listSupplier' => Supplier::all(),
+            'suppliers' => $this->listSupplier,
+            'listBarang' => $this->listBarang,
         ]);
     }
 }

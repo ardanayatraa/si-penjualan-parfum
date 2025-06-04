@@ -1,16 +1,18 @@
+<!-- resources/views/livewire/transaksi-penjualan/update.blade.php -->
 <div>
     <x-dialog-modal wire:model="open">
         <x-slot name="title">Edit Transaksi Penjualan</x-slot>
         <x-slot name="content">
             <div class="flex flex-col gap-4">
-
-                {{-- Barang --}}
+                {{-- Pilih Barang --}}
                 <div>
                     <x-label for="id_barang" value="Barang" />
                     <select id="id_barang" wire:model.live="id_barang" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Barang --</option>
                         @foreach ($listBarang as $b)
-                            <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
+                            <option value="{{ $b->id }}">
+                                {{ $b->nama_barang }} (Stok: {{ $b->stok }})
+                            </option>
                         @endforeach
                     </select>
                     @error('id_barang')
@@ -21,7 +23,7 @@
                 {{-- Jumlah Penjualan --}}
                 <div>
                     <x-label for="jumlah_penjualan" value="Jumlah Penjualan" />
-                    <x-input id="jumlah_penjualan" type="text" wire:model.live="jumlah_penjualan" min="1"
+                    <x-input id="jumlah_penjualan" type="number" wire:model.live="jumlah_penjualan" min="1"
                         class="w-full border-gray-300 rounded-md" />
                     @error('jumlah_penjualan')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
@@ -31,14 +33,14 @@
                 {{-- Tanggal Transaksi --}}
                 <div>
                     <x-label for="tanggal_transaksi" value="Tanggal Transaksi" />
-                    <x-input id="tanggal_transaksi" type="date" wire:model.defer="tanggal_transaksi"
+                    <x-input id="tanggal_transaksi" type="date" wire:model.live="tanggal_transaksi"
                         class="w-full border-gray-300 rounded-md" />
                     @error('tanggal_transaksi')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
 
-                {{-- Pajak --}}
+                {{-- Pilih Pajak --}}
                 <div>
                     <x-label for="id_pajak" value="Pajak (%)" />
                     <select id="id_pajak" wire:model.live="id_pajak" class="w-full border-gray-300 rounded-md">
@@ -58,24 +60,27 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <x-label value="Subtotal (Rp)" />
-                        <x-input type="text" readonly :value="number_format($subtotal, 0, ',', '.')" class="w-full border-gray-300 rounded-md" />
+                        <x-input type="text" readonly :value="number_format($subtotal, 0, ',', '.')"
+                            class="w-full bg-gray-100 border-gray-300 rounded-md" />
                     </div>
                     <div>
-                        <x-label value="Harga Pokok (Rp)" />
-                        <x-input type="text" readonly :value="number_format($harga_pokok * $jumlah_penjualan, 0, ',', '.')" class="w-full border-gray-300 rounded-md" />
+                        <x-label value="Harga Pokok Total (Rp)" />
+                        <x-input type="text" readonly :value="number_format($harga_pokok * $jumlah_penjualan, 0, ',', '.')"
+                            class="w-full bg-gray-100 border-gray-300 rounded-md" />
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <x-label value="Laba Bruto (Rp)" />
-                        <x-input type="text" readonly :value="number_format($laba_bruto, 0, ',', '.')" class="w-full border-gray-300 rounded-md" />
+                        <x-input type="text" readonly :value="number_format($laba_bruto, 0, ',', '.')"
+                            class="w-full bg-gray-100 border-gray-300 rounded-md" />
                     </div>
                     <div>
                         <x-label value="Total Harga (+ Pajak) (Rp)" />
-                        <x-input type="text" readonly :value="number_format($total_harga, 0, ',', '.')" class="w-full border-gray-300 rounded-md" />
+                        <x-input type="text" readonly :value="number_format($total_harga, 0, ',', '.')"
+                            class="w-full bg-gray-100 border-gray-300 rounded-md" />
                     </div>
                 </div>
-
             </div>
         </x-slot>
         <x-slot name="footer">

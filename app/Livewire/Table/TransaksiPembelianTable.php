@@ -28,10 +28,12 @@ class TransaksiPembelianTable extends DataTableComponent
                 ->sortable(),
 
             Column::make('Barang', 'barang.nama_barang')
-                ->sortable(),
+                ->sortable()
+                ->searchable(),
 
-            Column::make('Supplier', 'supplier.nama_supplier')
-                ->sortable(),
+            Column::make('Supplier', 'barang.supplier.nama_supplier')
+                ->sortable()
+                ->searchable(),
 
             Column::make('Tanggal Transaksi', 'tanggal_transaksi')
                 ->sortable()
@@ -54,12 +56,12 @@ class TransaksiPembelianTable extends DataTableComponent
         ];
     }
 
-    public function edit($id)
+    public function editTransaksi($id)
     {
         $this->dispatch('editTransaksi', $id);
     }
 
-    public function delete($id)
+    public function deleteTransaksi($id)
     {
         $this->dispatch('deleteTransaksi', $id);
     }

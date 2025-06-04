@@ -128,6 +128,13 @@
                                 <span>User</span>
                             </a>
 
+                            <a href="{{ route('pengaturan') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('pengaturan') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-cogs w-5 h-5 mr-3"></i>
+                                <span>Pengaturan</span>
+                            </a>
+
+
                             <a href="{{ route('laporan') }}"
                                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('laporan') ? 'sidebar-active' : '' }}">
                                 <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>

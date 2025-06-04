@@ -77,7 +77,7 @@
                     <tr>
                         <td>{{ $chunkIndex * 20 + $i + 1 }}</td>
                         <td>{{ $item->barang->nama_barang ?? '-' }}</td>
-                        <td>{{ $item->supplier->nama_supplier ?? '-' }}</td>
+                        <td>{{ $item->barang->supplier->nama_supplier ?? '-' }}</td>
                         <td>{{ \Carbon\Carbon::parse($item->tanggal_transaksi)->format('d-m-Y') }}</td>
                         <td>{{ $item->jumlah_pembelian }}</td>
                         <td>Rp {{ number_format($item->total, 0, ',', '.') }}</td>

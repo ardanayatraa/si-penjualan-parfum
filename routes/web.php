@@ -36,6 +36,13 @@ Route::middleware([
         return view('page.barang');
     })->name('barang');
 
+    // routes/web.php
+
+    Route::get('/pengaturan', function () {
+        return view('page.pengaturan');
+    })->name('pengaturan');
+
+
     Route::get('/supplier', function () {
         return view('page.supplier');
     })->name('supplier');

@@ -12,11 +12,18 @@ class Barang extends Model
     protected $table = 'barang';
 
     protected $fillable = [
+        'id_supplier',
         'nama_barang',
+        'satuan',
         'harga_beli',
         'harga_jual',
         'stok',
     ];
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'id_supplier');
+    }
 
     public function transaksiPembelian()
     {
