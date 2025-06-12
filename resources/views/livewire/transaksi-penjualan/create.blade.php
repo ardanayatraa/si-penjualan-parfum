@@ -11,7 +11,7 @@
                 {{-- Pilih Barang --}}
                 <div>
                     <x-label for="id_barang" value="Barang" />
-                    <select id="id_barang" wire:model="id_barang" class="w-full border-gray-300 rounded-md">
+                    <select id="id_barang" wire:model.live="id_barang" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Barang --</option>
                         @foreach ($listBarang as $b)
                             <option value="{{ $b->id }}">
@@ -27,7 +27,7 @@
                 {{-- Jumlah Penjualan --}}
                 <div>
                     <x-label for="jumlah_penjualan" value="Jumlah Penjualan" />
-                    <x-input id="jumlah_penjualan" type="number" wire:model.lazy="jumlah_penjualan" min="1"
+                    <x-input id="jumlah_penjualan" type="number" wire:model.live="jumlah_penjualan" min="1"
                         class="w-full border-gray-300 rounded-md" />
                     @error('jumlah_penjualan')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
@@ -47,7 +47,7 @@
                 {{-- Pilih Pajak --}}
                 <div>
                     <x-label for="id_pajak" value="Pajak (%)" />
-                    <select id="id_pajak" wire:model="id_pajak" class="w-full border-gray-300 rounded-md">
+                    <select id="id_pajak" wire:model.live="id_pajak" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Pajak --</option>
                         @foreach ($listPajak as $p)
                             <option value="{{ $p->id }}">
