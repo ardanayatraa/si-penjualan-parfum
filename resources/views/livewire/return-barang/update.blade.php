@@ -23,19 +23,7 @@
                     @enderror
                 </div>
 
-                {{-- Pilih Supplier --}}
-                <div>
-                    <x-label value="Supplier" />
-                    <select wire:model.defer="id_supplier" class="w-full border-gray-300 rounded-md">
-                        <option value="">-- Pilih Supplier --</option>
-                        @foreach ($listSupplier as $s)
-                            <option value="{{ $s->id_supplier }}">{{ $s->nama_supplier }}</option>
-                        @endforeach
-                    </select>
-                    @error('id_supplier')
-                        <span class="text-red-500 text-sm">{{ $message }}</span>
-                    @enderror
-                </div>
+
 
                 {{-- Jumlah --}}
                 <div>

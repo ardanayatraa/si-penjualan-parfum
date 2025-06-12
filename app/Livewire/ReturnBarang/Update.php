@@ -25,7 +25,6 @@ class Update extends Component
 
     protected $rules = [
         'id_barang'       => 'required|exists:barang,id',
-        'id_supplier'     => 'required|exists:suppliers,id',
         'jumlah'          => 'required|integer|min:1',
         'alasan'          => 'required|string|max:500',
         'tanggal_return'  => 'required|date',
@@ -98,7 +97,7 @@ class Update extends Component
         // Update data di tabel return_barang
         $rOld->update([
             'id_barang'      => $this->id_barang,
-            'id_supplier'    => $this->id_supplier,
+            'id_supplier'    => $barang->supplier->id_supplier,
             'jumlah'         => $this->jumlah,
             'alasan'         => $this->alasan,
             'tanggal_return' => $this->tanggal_return,
@@ -107,7 +106,6 @@ class Update extends Component
         $this->reset([
             'returnId',
             'id_barang',
-            'id_supplier',
             'jumlah',
             'alasan',
             'tanggal_return',
@@ -123,7 +121,6 @@ class Update extends Component
     {
         return view('livewire.return-barang.update', [
             'listBarang'   => Barang::all(),
-            'listSupplier' => Supplier::all(),
         ]);
     }
 }

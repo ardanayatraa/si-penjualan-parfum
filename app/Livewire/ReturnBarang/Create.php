@@ -18,7 +18,6 @@ class Create extends Component
 
     protected $rules = [
         'id_barang'       => 'required|exists:barang,id',
-        'id_supplier'     => 'required|exists:suppliers,id',
         'jumlah'          => 'required|integer|min:1',
         'alasan'          => 'required|string|max:500',
         'tanggal_return'  => 'required|date',
@@ -61,7 +60,7 @@ class Create extends Component
         // Simpan return
         ReturnBarang::create([
             'id_barang'      => $this->id_barang,
-            'id_supplier'    => $this->id_supplier,
+            'id_supplier'    => $barang->supplier->id_supplier,
             'jumlah'         => $this->jumlah,
             'alasan'         => $this->alasan,
             'tanggal_return' => $this->tanggal_return,
@@ -70,7 +69,7 @@ class Create extends Component
         // Kurangi stok barang sesuai jumlah return
         $barang->decrement('stok', $this->jumlah);
 
-        $this->reset(['id_barang', 'id_supplier', 'jumlah', 'alasan', 'tanggal_return']);
+        $this->reset(['id_barang',  'jumlah', 'alasan', 'tanggal_return']);
         $this->dispatch('refreshDatatable');
         $this->open = false;
     }
@@ -79,7 +78,6 @@ class Create extends Component
     {
         return view('livewire.return-barang.create', [
             'listBarang'   => Barang::all(),
-            'listSupplier' => Supplier::all(),
         ]);
     }
 }
