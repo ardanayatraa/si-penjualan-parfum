@@ -33,11 +33,10 @@ class ReturnBarangTable extends DataTableComponent
 
             Column::make('Barang', 'barang.nama_barang')
                 ->sortable()
-                ->format(fn($value, $row) => $row->barang->nama_barang),
-
-            Column::make('Supplier', 'supplier.nama')
+,
+            Column::make('Supplier', 'supplier.nama_supplier')
                 ->sortable()
-                ->format(fn($value, $row) => $row->supplier->nama),
+               ,
 
             Column::make('Jumlah', 'jumlah')
                 ->sortable(),
