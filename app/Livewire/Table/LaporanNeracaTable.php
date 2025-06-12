@@ -2,95 +2,84 @@
 
 namespace App\Livewire\Table;
 
-use App\Models\Barang;
-use App\Models\TransaksiPembelian;
-use App\Models\TransaksiPenjualan;
-use App\Models\Pengaturan;
-use Illuminate\Support\Facades\DB;
+use App\Models\Akun;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
+use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
 class LaporanNeracaTable extends DataTableComponent
 {
-    // Jika anda ingin pengguna bisa memilih “as of date” lewat filter,
-    // tambahkan public $asOfDate dan DateFilter. Tetapi di contoh ini
-    // kita tampilkan “per hari ini” secara default tanpa filter.
+    public string $startDate = '';
+    public string $endDate   = '';
+
+    protected $model = Akun::class;
 
     public function configure(): void
     {
-        $this->setPrimaryKey('akun');
+        $this->setPrimaryKey('kode_akun');
+        $this->setDefaultSort('kode_akun', 'asc');
     }
 
     public function builder(): Builder
     {
-        // Hitung tanggal hari ini
-        $tanggal = now()->format('Y-m-d');
+        return Akun::query();
+    }
 
-        // 1. Persediaan (nilai seluruh stok x harga_beli)
-        $persediaan = Barang::sum(DB::raw('stok * harga_beli'));
+    public function filters(): array
+    {
+        return [
+            DateFilter::make('Dari Tanggal')
+                ->config(['max' => now()->format('Y-m-d')])
+                ->filter(function(Builder $builder, string $value) {
+                    $this->startDate = $value;
+                    return $builder->whereHas('detailJurnal.jurnalUmum', fn($q) =>
+                        $q->whereDate('tanggal', '>=', $value)
+                    );
+                }),
 
-        // 2. Piutang (total penjualan sampai hari ini)
-        $piutang = TransaksiPenjualan::whereDate('tanggal_transaksi', '<=', $tanggal)
-            ->sum('total_harga');
-
-        // 3. Hutang (total pembelian sampai hari ini)
-        $hutang = TransaksiPembelian::whereDate('tanggal_pembelian', '<=', $tanggal)
-            ->sum('total');
-
-        // 4. Total penjualan & pembelian sampai hari ini (untuk laba rugi)
-        $totalPenjualan = TransaksiPenjualan::whereDate('tanggal_transaksi', '<=', $tanggal)
-            ->sum('total_harga');
-        $totalPembelian = TransaksiPembelian::whereDate('tanggal_pembelian', '<=', $tanggal)
-            ->sum('total');
-        $labaRugi = $totalPenjualan - $totalPembelian;
-
-        // 5. Kas = Laba/Rugi
-        $kas = $labaRugi;
-
-        // 6. Modal Awal dari Pengaturan
-        $modalAwal = Pengaturan::where('nama_pengaturan', 'modal_awal')
-            ->value('nilai_pengaturan') ?? 0;
-
-        // 7. Susun array neraca
-        $baris = [
-            ['akun' => 'Kas',                'nilai' => (float)$kas,         'jenis' => 'Aktiva'],
-            ['akun' => 'Persediaan Barang',  'nilai' => (float)$persediaan,  'jenis' => 'Aktiva'],
-            ['akun' => 'Piutang Usaha',      'nilai' => (float)$piutang,     'jenis' => 'Aktiva'],
-            ['akun' => 'Hutang Usaha',       'nilai' => (float)$hutang,      'jenis' => 'Pasiva'],
-            ['akun' => 'Modal Pemilik',      'nilai' => (float)$modalAwal,   'jenis' => 'Pasiva'],
-            ['akun' => 'Laba/Rugi Berjalan', 'nilai' => (float)$labaRugi,    'jenis' => 'Pasiva'],
+            DateFilter::make('Sampai Tanggal')
+                ->config(['max' => now()->format('Y-m-d')])
+                ->filter(function(Builder $builder, string $value) {
+                    $this->endDate = $value;
+                    return $builder->whereHas('detailJurnal.jurnalUmum', fn($q) =>
+                        $q->whereDate('tanggal', '<=', $value)
+                    );
+                }),
         ];
-
-        // 8. Bangun SQL UNION ALL
-        $subqueries = collect($baris)->map(function ($item) {
-            $akun  = addslashes($item['akun']);
-            $nilai = $item['nilai'];
-            $jenis = $item['jenis'];
-            return "SELECT '{$akun}' AS akun, {$nilai} AS nilai, '{$jenis}' AS jenis";
-        })->implode(' UNION ALL ');
-
-        $sql = "({$subqueries}) AS neraca";
-
-        return DB::table(DB::raw($sql));
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Akun', 'akun')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Jenis', 'jenis')
-                ->sortable(),
-
-            Column::make('Nilai (Rp)', 'nilai')
-                ->sortable()
-                ->format(fn($v) => 'Rp '.number_format($v, 0, ',', '.')),
+            Column::make('No Akun', 'kode_akun')->sortable(),
+            Column::make('Nama Akun', 'nama_akun')->sortable(),
         ];
+    }
+
+    private function sumSide($akun, string $field): float
+    {
+        $query = $akun->detailJurnal()->with('jurnalUmum');
+        if ($this->startDate) {
+            $query->whereHas('jurnalUmum', fn($q) =>
+                $q->whereDate('tanggal', '>=', $this->startDate)
+            );
+        }
+        if ($this->endDate) {
+            $query->whereHas('jurnalUmum', fn($q) =>
+                $q->whereDate('tanggal', '<=', $this->endDate)
+            );
+        }
+        return (float) $query->sum($field);
+    }
+
+    private function formatRupiah(float $angka): string
+    {
+        return $angka > 0
+            ? 'Rp '.number_format($angka, 0, ',', '.')
+            : '-';
     }
 
     public function bulkActions(): array
@@ -100,37 +89,34 @@ class LaporanNeracaTable extends DataTableComponent
 
     public function exportPdf()
     {
-        // Hitung ulang data neraca
-        $tanggal = now()->format('Y-m-d');
+        $selected = $this->getSelected();
+        $akunQuery = Akun::query()
+            ->when($selected, fn($q) => $q->whereIn('kode_akun', $selected));
 
-        $persediaan = Barang::sum(DB::raw('stok * harga_beli'));
-        $piutang = TransaksiPenjualan::whereDate('tanggal_transaksi', '<=', $tanggal)
-            ->sum('total_harga');
-        $hutang = TransaksiPembelian::whereDate('tanggal_pembelian', '<=', $tanggal)
-            ->sum('total');
-        $totalPenjualan = TransaksiPenjualan::whereDate('tanggal_transaksi', '<=', $tanggal)
-            ->sum('total_harga');
-        $totalPembelian = TransaksiPembelian::whereDate('tanggal_pembelian', '<=', $tanggal)
-            ->sum('total');
-        $labaRugi = $totalPenjualan - $totalPembelian;
-        $kas = $labaRugi;
-        $modalAwal = Pengaturan::where('nama_pengaturan', 'modal_awal')
-            ->value('nilai_pengaturan') ?? 0;
+        $list = $akunQuery->orderBy('kode_akun')->get()->map(function($row) {
+            return [
+                'kode'   => $row->kode_akun,
+                'nama'   => $row->nama_akun,
+                'debet'  => $this->sumSide($row, 'debit'),
+                'kredit' => $this->sumSide($row, 'kredit'),
+            ];
+        });
 
-        $baris = [
-            ['akun' => 'Kas',                'nilai' => (float)$kas,         'jenis' => 'Aktiva'],
-            ['akun' => 'Persediaan Barang',  'nilai' => (float)$persediaan,  'jenis' => 'Aktiva'],
-            ['akun' => 'Piutang Usaha',      'nilai' => (float)$piutang,     'jenis' => 'Aktiva'],
-            ['akun' => 'Hutang Usaha',       'nilai' => (float)$hutang,      'jenis' => 'Pasiva'],
-            ['akun' => 'Modal Pemilik',      'nilai' => (float)$modalAwal,   'jenis' => 'Pasiva'],
-            ['akun' => 'Laba/Rugi Berjalan', 'nilai' => (float)$labaRugi,    'jenis' => 'Pasiva'],
-        ];
+        $totalDebet  = $list->sum('debet');
+        $totalKredit = $list->sum('kredit');
 
-        $pdf = Pdf::loadView('exports.neraca-pdf', [
-            'baris'   => $baris,
-            'tanggal' => Carbon::parse($tanggal)->format('d-m-Y'),
-        ])->setPaper('a4','landscape');
+        $start = $this->startDate ?: '';
+        $end   = $this->endDate   ?: '';
 
-        return response()->streamDownload(fn() => print($pdf->stream()), "laporan-neraca_{$tanggal}.pdf");
+        $pdf = Pdf::loadView('exports.neraca-pdf', compact(
+            'list','totalDebet','totalKredit','start','end'
+        ))->setPaper('a4', 'landscape');
+
+        $this->clearSelected();
+
+        return response()->streamDownload(
+            fn() => print($pdf->stream()),
+            "laporan-neraca_{$start}_{$end}.pdf"
+        );
     }
 }

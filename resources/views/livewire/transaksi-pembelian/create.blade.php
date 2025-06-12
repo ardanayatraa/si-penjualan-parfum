@@ -6,22 +6,19 @@
     <x-dialog-modal wire:model="open">
         <x-slot name="title">Tambah Transaksi Pembelian</x-slot>
         <x-slot name="content">
-            <div class="flex flex-col gap-6">
-                {{-- PILIH SUPPLIER --}}
+            <div class="space-y-6">
+                {{-- FILTER SUPPLIER --}}
                 <div>
-                    <x-label value="Supplier" />
-                    <select wire:model.live="id_supplier" class="w-full border-gray-300 rounded-md">
+                    <x-label value="Filter Supplier" />
+                    <select wire:model.live="filterSupplier" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Supplier --</option>
                         @foreach ($suppliers as $s)
                             <option value="{{ $s->id_supplier }}">{{ $s->nama_supplier }}</option>
                         @endforeach
                     </select>
-                    @error('id_supplier')
-                        <span class="text-red-500 text-sm">{{ $message }}</span>
-                    @enderror
                 </div>
 
-                {{-- TANGGAL TRANSAKSI --}}
+                {{-- TANGGAL --}}
                 <div>
                     <x-label value="Tanggal Transaksi" />
                     <x-input type="date" wire:model="tanggal_transaksi" class="w-full border-gray-300 rounded-md" />
@@ -30,57 +27,55 @@
                     @enderror
                 </div>
 
-                {{-- KOTAK PENCARIAN --}}
-                @if ($id_supplier)
+                {{-- PENCARIAN --}}
+                @if ($filterSupplier)
                     <div>
                         <x-label value="Cari Barang" />
-                        <x-input type="text" wire:model.live="search" placeholder="Ketik nama barang..."
+                        <x-input type="text" wire:model.debounce.500ms="search" placeholder="Ketik nama..."
                             class="w-full border-gray-300 rounded-md" />
                     </div>
                 @endif
 
-                {{-- DAFTAR BARANG DENGAN SCROLL --}}
-                @if ($id_supplier)
-                    <div class="overflow-y-auto" style="max-height: 300px;">
-
-                        <table class="w-full table-auto border-collapse">
+                {{-- DAFTAR BARANG --}}
+                @if ($filterSupplier)
+                    <div class="overflow-y-auto" style="max-height:300px;">
+                        <table class="w-full border-collapse table-auto">
                             <thead>
                                 <tr class="bg-gray-100">
-                                    <th class="border px-2 py-1 text-left">Nama Barang</th>
-                                    <th class="border px-2 py-1 text-center">Stok Akhir</th>
-                                    <th class="border px-2 py-1 text-center">Harga Beli</th>
-                                    <th class="border px-2 py-1 text-center">Jumlah</th>
+                                    <th class="px-2 py-1 text-left">Nama Barang</th>
+                                    <th class="px-2 py-1 text-center">Stok</th>
+                                    <th class="px-2 py-1 text-center">Harga Beli</th>
+                                    <th class="px-2 py-1 text-center">Jumlah</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($listBarang as $b)
+                                @forelse($listBarang as $b)
                                     <tr class="hover:bg-gray-50">
-                                        <td class="border px-2 py-1">{{ $b->nama_barang }}</td>
-                                        <td class="border px-2 py-1 text-center">{{ $b->stok }}</td>
-                                        <td class="border px-2 py-1 text-center">
+                                        <td class="px-2 py-1 border">{{ $b->nama_barang }}</td>
+                                        <td class="px-2 py-1 border text-center">{{ $b->stok }}</td>
+                                        <td class="px-2 py-1 border text-center">
                                             Rp {{ number_format($b->harga_beli, 0, ',', '.') }}
                                         </td>
-                                        <td class="border px-2 py-1 text-center">
-                                            <div class="flex items-center justify-center space-x-2">
-                                                <button type="button" wire:click="decrease({{ $b->id }})"
+                                        <td class="px-2 py-1 border text-center">
+                                            <div class="inline-flex items-center space-x-2">
+                                                <button wire:click="decrease({{ $b->id }})"
                                                     class="px-2 py-1 bg-gray-200 rounded">−</button>
                                                 <input type="number" wire:model="quantities.{{ $b->id }}"
-                                                    class="w-16 text-center border rounded" min="0" />
-                                                <button type="button" wire:click="increase({{ $b->id }})"
+                                                    min="0" class="w-16 text-center border rounded" />
+                                                <button wire:click="increase({{ $b->id }})"
                                                     class="px-2 py-1 bg-gray-200 rounded">+</button>
                                             </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center py-4 text-gray-500">
-                                            Tidak ada barang sesuai pencarian.
+                                        <td colspan="4" class="py-4 text-center text-gray-500">
+                                            Tidak ada barang.
                                         </td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
-
                         @error('quantities')
                             <span class="text-red-500 text-sm">{{ $message }}</span>
                         @enderror
@@ -90,9 +85,13 @@
         </x-slot>
 
         <x-slot name="footer">
-            <div class="flex justify-end gap-2">
-                <x-button wire:click="store" class="bg-blue-600 hover:bg-blue-700">Simpan</x-button>
-                <x-button wire:click="$set('open', false)" class="bg-gray-500 hover:bg-gray-600">Batal</x-button>
+            <div class="flex justify-end space-x-2">
+                <x-button wire:click="store" class="bg-blue-600 hover:bg-blue-700">
+                    Simpan
+                </x-button>
+                <x-button wire:click="$set('open', false)" class="bg-gray-500 hover:bg-gray-600">
+                    Batal
+                </x-button>
             </div>
         </x-slot>
     </x-dialog-modal>

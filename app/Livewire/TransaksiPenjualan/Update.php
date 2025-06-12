@@ -3,9 +3,13 @@
 namespace App\Livewire\TransaksiPenjualan;
 
 use Livewire\Component;
-use App\Models\Barang;
-use App\Models\PajakTransaksi;
 use App\Models\TransaksiPenjualan;
+use App\Models\Barang;
+use App\Models\JurnalUmum;
+use App\Models\DetailJurnal;
+use App\Models\Akun;
+use App\Models\PajakTransaksi;
+use Illuminate\Support\Facades\DB;
 
 class Update extends Component
 {
@@ -29,12 +33,15 @@ class Update extends Component
 
     protected $listeners = ['editTransaksi' => 'loadData'];
 
-    protected $rules = [
-        'id_barang'        => 'required|exists:barang,id',
-        'jumlah_penjualan' => 'required|integer|min:1',
-        'tanggal_transaksi'=> 'required|date',
-        'id_pajak'         => 'required|exists:pajak_transaksi,id',
-    ];
+    protected function rules()
+    {
+        return [
+            'id_barang'        => 'required|exists:barang,id',
+            'jumlah_penjualan' => 'required|integer|min:1',
+            'tanggal_transaksi'=> 'required|date',
+            'id_pajak'         => 'required|exists:pajak_transaksi,id',
+        ];
+    }
 
     public function loadData($id)
     {
@@ -43,21 +50,15 @@ class Update extends Component
         $this->id_transaksi      = $t->id;
         $this->id_barang         = $t->id_barang;
         $this->jumlah_penjualan  = $t->jumlah_penjualan;
-        $this->tanggal_transaksi = $t->tanggal_transaksi;
+        $this->tanggal_transaksi = $t->tanggal_transaksi->format('Y-m-d');
         $this->id_pajak          = $t->id_pajak;
 
-        // Lookup harga jual & pokok
+        // lookup harga
         if ($b = Barang::find($this->id_barang)) {
             $this->harga_jual  = $b->harga_jual;
             $this->harga_pokok = $b->harga_beli;
-            // Pastikan jumlah_penjualan tidak melebihi stok saat ini + jumlah lama
-            $maxAllow = $b->stok + $t->jumlah_penjualan;
-            if ($this->jumlah_penjualan > $maxAllow) {
-                $this->jumlah_penjualan = $maxAllow;
-            }
         }
 
-        // Load stored computations
         $this->subtotal    = $t->subtotal;
         $this->laba_bruto  = $t->laba_bruto;
         $this->total_harga = $t->total_harga;
@@ -70,10 +71,6 @@ class Update extends Component
         if ($b = Barang::find($value)) {
             $this->harga_jual  = $b->harga_jual;
             $this->harga_pokok = $b->harga_beli;
-            // Reset jumlah_penjualan jika melebihi stok
-            if ($this->jumlah_penjualan > $b->stok) {
-                $this->jumlah_penjualan = $b->stok;
-            }
         } else {
             $this->harga_jual = $this->harga_pokok = 0;
         }
@@ -82,21 +79,7 @@ class Update extends Component
 
     public function updatedJumlahPenjualan($value)
     {
-        $b = Barang::find($this->id_barang);
-        $tOld = TransaksiPenjualan::find($this->id_transaksi);
-        if ($b) {
-            // Hitung sisa stok jika update: stok + jumlah lama
-            $maxAllow = $b->stok + ($tOld?->jumlah_penjualan ?? 0);
-            if ($value > $maxAllow) {
-                $this->addError(
-                    'jumlah_penjualan',
-                    'Jumlah penjualan tidak boleh melebihi stok tersedia (' . $maxAllow . ').'
-                );
-                $this->jumlah_penjualan = $maxAllow;
-            } else {
-                $this->resetErrorBag('jumlah_penjualan');
-            }
-        }
+        // validasi against stok + old amount handled in update()
         $this->recalculate();
     }
 
@@ -107,16 +90,10 @@ class Update extends Component
 
     private function recalculate()
     {
-        // 1) Subtotal = harga_jual * jumlah_penjualan
         $this->subtotal = $this->harga_jual * $this->jumlah_penjualan;
+        $hpTotal        = $this->harga_pokok * $this->jumlah_penjualan;
+        $this->laba_bruto = max(0, $this->subtotal - $hpTotal);
 
-        // 2) Harga pokok total = harga_pokok * jumlah_penjualan
-        $hargaPokokTotal = $this->harga_pokok * $this->jumlah_penjualan;
-
-        // 3) Laba bruto = subtotal - harga pokok total
-        $this->laba_bruto = max(0, $this->subtotal - $hargaPokokTotal);
-
-        // 4) Total harga = subtotal + pajak
         if ($p = PajakTransaksi::find($this->id_pajak)) {
             $this->total_harga = round($this->subtotal * (1 + $p->presentase / 100), 2);
         } else {
@@ -128,76 +105,97 @@ class Update extends Component
     {
         $this->validate();
 
-        $tOld = TransaksiPenjualan::findOrFail($this->id_transaksi);
-        $bNew = Barang::find($this->id_barang);
-        if (! $bNew) {
-            $this->addError('id_barang', 'Barang tidak ditemukan.');
-            return;
-        }
+        DB::transaction(function() {
+            $t = TransaksiPenjualan::findOrFail($this->id_transaksi);
+            $oldBarangId  = $t->id_barang;
+            $oldJumlah    = $t->jumlah_penjualan;
+            $bNew         = Barang::findOrFail($this->id_barang);
 
-        // Maksimal stok untuk transaksi update
-        $maxAllow = $bNew->stok + $tOld->jumlah_penjualan;
-        if ($this->jumlah_penjualan > $maxAllow) {
-            $this->addError(
-                'jumlah_penjualan',
-                'Jumlah penjualan tidak boleh melebihi stok tersedia (' . $maxAllow . ').'
-            );
-            return;
-        }
-
-        $oldBarangId = $tOld->id_barang;
-        $oldJumlah   = $tOld->jumlah_penjualan;
-
-        // Jika barang berubah, kembalikan stok barang lama
-        if ($oldBarangId !== $this->id_barang) {
-            Barang::where('id', $oldBarangId)->increment('stok', $oldJumlah);
-        }
-
-        // Sesuaikan stok barang sekarang
-        if ($oldBarangId === $this->id_barang) {
-            $selisih = $this->jumlah_penjualan - $oldJumlah;
-            if ($selisih > 0) {
-                $bNew->decrement('stok', $selisih);
-            } elseif ($selisih < 0) {
-                $bNew->increment('stok', abs($selisih));
+            // 1) rollback & adjust stok
+            if ($oldBarangId !== $this->id_barang) {
+                // kembalikan stok lama
+                Barang::where('id', $oldBarangId)->increment('stok', $oldJumlah);
+                // kurangi stok barang baru
+                $bNew->decrement('stok', $this->jumlah_penjualan);
+            } else {
+                // same barang: adjust selisih
+                $selisih = $this->jumlah_penjualan - $oldJumlah;
+                if ($selisih > 0) {
+                    $bNew->decrement('stok', $selisih);
+                } elseif ($selisih < 0) {
+                    $bNew->increment('stok', abs($selisih));
+                }
             }
-        } else {
-            $bNew->decrement('stok', $this->jumlah_penjualan);
-        }
 
-        // Update transaksi
-        $tOld->update([
-            'id_barang'         => $this->id_barang,
-            'jumlah_penjualan'  => $this->jumlah_penjualan,
-            'tanggal_transaksi' => $this->tanggal_transaksi,
-            'id_pajak'          => $this->id_pajak,
-            'subtotal'          => $this->subtotal,
-            'harga_pokok'       => $this->harga_pokok * $this->jumlah_penjualan,
-            'laba_bruto'        => $this->laba_bruto,
-            'total_harga'       => $this->total_harga,
-        ]);
+            // 2) update transaksi
+            $t->update([
+                'id_barang'         => $this->id_barang,
+                'jumlah_penjualan'  => $this->jumlah_penjualan,
+                'tanggal_transaksi' => $this->tanggal_transaksi,
+                'id_pajak'          => $this->id_pajak,
+                'subtotal'          => $this->subtotal,
+                'harga_pokok'       => $this->harga_pokok * $this->jumlah_penjualan,
+                'laba_bruto'        => $this->laba_bruto,
+                'total_harga'       => $this->total_harga,
+            ]);
 
-        $this->dispatch('refreshDatatable');
+            // 3) update jurnal umum header
+            $noBukti = 'PNJ-' . $t->id;
+            $j = JurnalUmum::where('no_bukti', $noBukti)->firstOrFail();
+            $j->update([
+                'tanggal'    => $this->tanggal_transaksi,
+                'keterangan' => "Penjualan {$bNew->nama_barang}",
+            ]);
+
+            // 4) hapus detail lama & tulis ulang
+            $j->detailJurnal()->delete();
+
+            // Debit Kas/Bank (1102)
+            $akunKas = Akun::where('kode_akun','1102')->firstOrFail();
+            DetailJurnal::create([
+                'jurnal_umum_id' => $j->id,
+                'akun_id'        => $akunKas->id,
+                'debit'          => $this->total_harga,
+                'kredit'         => 0,
+            ]);
+
+            // Kredit Pendapatan (4001)
+            $akunPdpt = Akun::where('kode_akun','4001')->firstOrFail();
+            DetailJurnal::create([
+                'jurnal_umum_id' => $j->id,
+                'akun_id'        => $akunPdpt->id,
+                'debit'          => 0,
+                'kredit'         => $this->subtotal,
+            ]);
+
+            // Kredit Pajak Keluaran (2102)
+            $pajakAmt = $this->total_harga - $this->subtotal;
+            if ($pajakAmt > 0) {
+                $akunPjk = Akun::where('kode_akun','2102')->firstOrFail();
+                DetailJurnal::create([
+                    'jurnal_umum_id' => $j->id,
+                    'akun_id'        => $akunPjk->id,
+                    'debit'          => 0,
+                    'kredit'         => $pajakAmt,
+                ]);
+            }
+        });
+
+        // reset & refresh
         $this->reset([
-            'id_transaksi',
-            'id_barang',
-            'jumlah_penjualan',
-            'tanggal_transaksi',
-            'id_pajak',
-            'harga_jual',
-            'harga_pokok',
-            'subtotal',
-            'laba_bruto',
-            'total_harga',
+            'id_transaksi','id_barang','jumlah_penjualan',
+            'tanggal_transaksi','id_pajak','harga_jual',
+            'harga_pokok','subtotal','laba_bruto','total_harga',
         ]);
+        $this->dispatch('refreshDatatable');
         $this->open = false;
     }
 
     public function render()
     {
         return view('livewire.transaksi-penjualan.update', [
-            'listBarang' => Barang::all(),
-            'listPajak'  => PajakTransaksi::all(),
+            'listBarang' => Barang::orderBy('nama_barang')->get(),
+            'listPajak'  => PajakTransaksi::orderBy('presentase')->get(),
         ]);
     }
 }

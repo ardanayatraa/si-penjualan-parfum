@@ -6,90 +6,84 @@
     <style>
         @page {
             size: A4 landscape;
-            margin: 20px;
+            margin: 20px
         }
 
         body {
             font-family: sans-serif;
-            font-size: 12px;
+            font-size: 12px
         }
 
         h2,
         p {
             text-align: center;
             margin: 0;
-            padding: 2px;
+            padding: 4px
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 10px
         }
 
         th,
         td {
             border: 1px solid #000;
-            padding: 4px;
-            text-align: left;
+            padding: 6px
         }
 
         th {
-            background: #f3f3f3;
+            background: #f3f3f3
         }
 
-        .summary {
-            margin-top: 20px;
-            font-weight: bold;
-            text-align: right;
+        .right {
+            text-align: right
         }
     </style>
 </head>
 
 <body>
-    <h2>Laporan Neraca</h2>
-    <p>Tanggal: {{ $tanggal }}</p>
+
+    <h2>NERACA</h2>
+    <p>
+        @if ($start && $end)
+            Periode: {{ \Carbon\Carbon::parse($start)->format('d-m-Y') }}
+            s.d. {{ \Carbon\Carbon::parse($end)->format('d-m-Y') }}
+        @else
+            Dicetak: {{ now()->format('d-m-Y H:i') }}
+        @endif
+    </p>
 
     <table>
         <thead>
             <tr>
-                <th style="width:60%;">Akun</th>
-                <th style="width:20%;">Jenis</th>
-                <th style="width:20%;">Nilai (Rp)</th>
+                <th>No Akun</th>
+                <th>Nama Akun</th>
+                <th class="right">Debet</th>
+                <th class="right">Kredit</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($baris as $row)
+            @foreach ($list as $r)
                 <tr>
-                    <td>{{ $row['akun'] }}</td>
-                    <td>{{ $row['jenis'] }}</td>
-                    <td style="text-align: right;">{{ number_format($row['nilai'], 0, ',', '.') }}</td>
+                    <td>{{ $r['kode'] }}</td>
+                    <td>{{ $r['nama'] }}</td>
+                    <td class="right">{{ $r['debet'] > 0 ? 'Rp ' . number_format($r['debet'], 0, ',', '.') : '-' }}</td>
+                    <td class="right">{{ $r['kredit'] > 0 ? 'Rp ' . number_format($r['kredit'], 0, ',', '.') : '-' }}
+                    </td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
-            @php
-                $totalAktiva = collect($baris)->where('jenis', 'Aktiva')->sum('nilai');
-                $totalPasiva = collect($baris)->where('jenis', 'Pasiva')->sum('nilai');
-            @endphp
             <tr>
-                <td colspan="2">Total Aktiva</td>
-                <td style="text-align: right;">{{ number_format($totalAktiva, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td colspan="2">Total Pasiva</td>
-                <td style="text-align: right;">{{ number_format($totalPasiva, 0, ',', '.') }}</td>
+                <th colspan="2">TOTAL</th>
+                <th class="right">Rp {{ number_format($totalDebet, 0, ',', '.') }}</th>
+                <th class="right">Rp {{ number_format($totalKredit, 0, ',', '.') }}</th>
             </tr>
         </tfoot>
     </table>
 
-    <div class="summary">
-        @if ($totalAktiva === $totalPasiva)
-            <p>Neraca Balance ✔</p>
-        @else
-            <p>Neraca TIDAK Balance ❌</p>
-        @endif
-    </div>
 </body>
 
 </html>

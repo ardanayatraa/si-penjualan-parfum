@@ -26,4 +26,9 @@ class TransaksiPembelian extends Model
     {
         return $this->belongsTo(Barang::class, 'id_barang');
     }
+
+    public function jurnalUmum()
+{
+    return $this->hasOne(JurnalUmum::class, 'no_bukti', 'PBJ-'.$this->id);
+}
 }

@@ -54,12 +54,12 @@
 
                 <!-- Laba Rugi -->
                 <div id="content-labarugi" class="hidden">
-                    {{-- @livewire('table.laporan-laba-rugi-table') --}}
+                    @livewire('table.laporan-laba-rugi-table')
                 </div>
 
                 <!-- Neraca -->
                 <div id="content-neraca" class="hidden">
-                    {{-- @livewire('table.laporan-neraca-table') --}}
+                    @livewire('table.laporan-neraca-table')
                 </div>
             </div>
         </div>

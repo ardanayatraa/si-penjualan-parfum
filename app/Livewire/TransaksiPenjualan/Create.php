@@ -3,10 +3,14 @@
 namespace App\Livewire\TransaksiPenjualan;
 
 use Livewire\Component;
+use App\Models\TransaksiPenjualan;
 use App\Models\Barang;
 use App\Models\PajakTransaksi;
-use App\Models\TransaksiPenjualan;
+use App\Models\JurnalUmum;
+use App\Models\DetailJurnal;
+use App\Models\Akun;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class Create extends Component
 {
@@ -40,7 +44,6 @@ class Create extends Component
         if ($b) {
             $this->harga_jual  = $b->harga_jual;
             $this->harga_pokok = $b->harga_beli;
-            // reset jumlah_penjualan jika stok berubah
             if ($this->jumlah_penjualan > $b->stok) {
                 $this->jumlah_penjualan = $b->stok;
             }
@@ -69,16 +72,10 @@ class Create extends Component
 
     private function recalculate()
     {
-        // 1) Subtotal = harga_jual * jumlah_penjualan
         $this->subtotal = $this->harga_jual * $this->jumlah_penjualan;
+        $hpTotal        = $this->harga_pokok * $this->jumlah_penjualan;
+        $this->laba_bruto = max(0, $this->subtotal - $hpTotal);
 
-        // 2) Harga pokok total = harga_pokok * jumlah_penjualan
-        $hargaPokokTotal = $this->harga_pokok * $this->jumlah_penjualan;
-
-        // 3) Laba bruto = subtotal - harga pokok total
-        $this->laba_bruto = max(0, $this->subtotal - $hargaPokokTotal);
-
-        // 4) Total harga = subtotal + pajak
         if ($p = PajakTransaksi::find($this->id_pajak)) {
             $this->total_harga = round($this->subtotal * (1 + $p->presentase / 100), 2);
         } else {
@@ -95,38 +92,71 @@ class Create extends Component
             $this->addError('id_barang', 'Barang tidak ditemukan.');
             return;
         }
-
         if ($this->jumlah_penjualan > $barang->stok) {
-            $this->addError('jumlah_penjualan', 'Jumlah penjualan tidak boleh melebihi stok ('. $barang->stok .').');
+            $this->addError('jumlah_penjualan', 'Jumlah melebihi stok ('.$barang->stok.').');
             return;
         }
 
-        // 1. Kurangi stok barang sesuai jumlah_penjualan
-        $barang->decrement('stok', $this->jumlah_penjualan);
+        DB::transaction(function() use ($barang) {
+            // 1) kurangi stok
+            $barang->decrement('stok', $this->jumlah_penjualan);
 
-        // 2. Simpan transaksi penjualan
-        TransaksiPenjualan::create([
-            'id_kasir'           => Auth::id(),
-            'id_barang'          => $this->id_barang,
-            'jumlah_penjualan'   => $this->jumlah_penjualan,
-            'tanggal_transaksi'  => $this->tanggal_transaksi,
-            'id_pajak'           => $this->id_pajak,
-            'subtotal'           => $this->subtotal,
-            'harga_pokok'        => $this->harga_pokok * $this->jumlah_penjualan,
-            'laba_bruto'         => $this->laba_bruto,
-            'total_harga'        => $this->total_harga,
-        ]);
+            // 2) simpan transaksi
+            $t = TransaksiPenjualan::create([
+                'id_kasir'           => Auth::id(),
+                'id_barang'          => $this->id_barang,
+                'jumlah_penjualan'   => $this->jumlah_penjualan,
+                'tanggal_transaksi'  => $this->tanggal_transaksi,
+                'id_pajak'           => $this->id_pajak,
+                'subtotal'           => $this->subtotal,
+                'harga_pokok'        => $this->harga_pokok * $this->jumlah_penjualan,
+                'laba_bruto'         => $this->laba_bruto,
+                'total_harga'        => $this->total_harga,
+            ]);
 
+            // 3) header jurnal
+            $j = JurnalUmum::create([
+                'tanggal'    => $this->tanggal_transaksi,
+                'no_bukti'   => 'PNJ-'.$t->id,
+                'keterangan' => "Penjualan {$barang->nama_barang}",
+            ]);
+
+            // 4) Debit Kas/Bank (akun 1102)
+            $akunKas = Akun::where('kode_akun','1102')->firstOrFail();
+            DetailJurnal::create([
+                'jurnal_umum_id' => $j->id,
+                'akun_id'        => $akunKas->id,
+                'debit'          => $this->total_harga,
+                'kredit'         => 0,
+            ]);
+
+            // 5) Kredit Pendapatan (akun 4001) = subtotal
+            $akunPdpt = Akun::where('kode_akun','4001')->firstOrFail();
+            DetailJurnal::create([
+                'jurnal_umum_id' => $j->id,
+                'akun_id'        => $akunPdpt->id,
+                'debit'          => 0,
+                'kredit'         => $this->subtotal,
+            ]);
+
+            // 6) Kredit Pajak Keluaran (akun 2102) = selisih pajak
+            $pajakAmt = $this->total_harga - $this->subtotal;
+            if ($pajakAmt > 0) {
+                $akunPjk = Akun::where('kode_akun','2102')->firstOrFail();
+                DetailJurnal::create([
+                    'jurnal_umum_id' => $j->id,
+                    'akun_id'        => $akunPjk->id,
+                    'debit'          => 0,
+                    'kredit'         => $pajakAmt,
+                ]);
+            }
+        });
+
+        // reset form
         $this->reset([
-            'id_barang',
-            'jumlah_penjualan',
-            'tanggal_transaksi',
-            'id_pajak',
-            'harga_jual',
-            'harga_pokok',
-            'subtotal',
-            'laba_bruto',
-            'total_harga',
+            'id_barang','jumlah_penjualan','tanggal_transaksi',
+            'id_pajak','harga_jual','harga_pokok',
+            'subtotal','laba_bruto','total_harga',
         ]);
 
         $this->dispatch('refreshDatatable');

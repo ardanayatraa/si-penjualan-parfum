@@ -15,4 +15,9 @@ class PajakTransaksi extends Model
         'nama',
         'presentase',
     ];
+
+    public function transaksiPenjualans()
+    {
+        return $this->hasMany(TransaksiPenjualan::class, 'id_pajak');
+    }
 }

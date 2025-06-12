@@ -18,6 +18,11 @@ class Supplier extends Model
         'no_telp',
     ];
 
+    public function barangs()
+    {
+        return $this->hasMany(Barang::class, 'id_supplier');
+    }
+
     public function transaksiPembelian()
     {
         return $this->hasMany(TransaksiPembelian::class, 'id_supplier');

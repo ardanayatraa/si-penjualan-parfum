@@ -23,7 +23,6 @@ class TransaksiPenjualan extends Model
         'jumlah_penjualan',
     ];
 
-
     protected $casts = [
         'tanggal_transaksi' => 'datetime',
     ];
@@ -32,7 +31,6 @@ class TransaksiPenjualan extends Model
     {
         return $this->belongsTo(User::class, 'id_kasir')->where('level', 'kasir');
     }
-
 
     public function barang()
     {
@@ -43,4 +41,10 @@ class TransaksiPenjualan extends Model
     {
         return $this->belongsTo(PajakTransaksi::class, 'id_pajak');
     }
+
+    public function jurnalUmum()
+    {
+        return $this->hasOne(JurnalUmum::class, 'no_bukti', 'PNJ-'.$this->id);
+    }
+
 }
