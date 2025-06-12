@@ -45,7 +45,7 @@
 
 <body>
     <div class="center" style="font-weight:bold;">GRYA PARFUM</div>
-    <div class="center">Jln.pasir putih kedonganan kec kute kab badung</div>
+    <div class="center">Jln.pasir putih kedonganan kec kuta kab badung</div>
     <div class="center small">Telp. 081234567</div>
     <hr />
     <div>No Nota: PNJ-{{ $transaksi->id }}</div>
