@@ -76,15 +76,20 @@ class LaporanPenjualanTable extends DataTableComponent
         return [
             Column::make('ID','id')->sortable(),
 
-            Column::make('Kasir','kasir.username')->sortable(),
+            Column::make('Kasir','kasir.username')
+                ->sortable()
+          ,
 
-            Column::make('Barang','barang.nama_barang')->sortable(),
+            Column::make('Barang','barang.nama_barang')
+                ->sortable()
+          ,
 
             Column::make('Tanggal','tanggal_transaksi')
                 ->sortable()
                 ->format(fn($v) => Carbon::parse($v)->format('d-m-Y')),
 
-            Column::make('Jumlah','jumlah_penjualan')->sortable(),
+            Column::make('Jumlah','jumlah_penjualan')
+                ->sortable(),
 
             Column::make('Subtotal','subtotal')
                 ->sortable()
@@ -101,15 +106,6 @@ class LaporanPenjualanTable extends DataTableComponent
             Column::make('Total Harga','total_harga')
                 ->sortable()
                 ->format(fn($v) => 'Rp '.number_format($v,0,',','.')),
-
-            Column::make('Nota', 'id')
-                ->label(fn($row) => '<button wire:click="printNota('.$row->id.')" class="px-2 py-1 bg-blue-600 text-white rounded">Cetak Nota</button>')
-                ->html(),
         ];
-    }
-
-    public function printNota(int $id)
-    {
-        $this->dispatch('cetakNota',$id);
     }
 }

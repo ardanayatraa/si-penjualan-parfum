@@ -6,7 +6,7 @@ use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use App\Models\TransaksiPenjualan;
 use Carbon\Carbon;
-
+use Barryvdh\DomPDF\Facade\Pdf;
 class TransaksiPenjualanTable extends DataTableComponent
 {
     protected $model = TransaksiPenjualan::class;
@@ -67,6 +67,9 @@ class TransaksiPenjualanTable extends DataTableComponent
                     'deleteEvent'  => 'delete',
                 ]))
                 ->html(),
+                 Column::make('Nota', 'id')
+                ->label(fn($row) => '<button wire:click="printNota('.$row->id.')" class="px-2 py-1 bg-blue-600 text-white rounded">Cetak Nota</button>')
+                ->html(),
         ];
     }
 
@@ -78,5 +81,18 @@ class TransaksiPenjualanTable extends DataTableComponent
     public function delete($id)
     {
         $this->dispatch('delete', $id);
+    }
+
+      public function printNota(int $id)
+    {
+        $trans = TransaksiPenjualan::with(['kasir','barang','pajak'])->findOrFail($id);
+
+        $pdf = Pdf::loadView('exports.nota-pdf', ['transaksi' => $trans])
+                  ->setPaper([0, 0, 226.77, 600], 'portrait');
+
+        return response()->streamDownload(
+            fn() => print($pdf->stream()),
+            "nota-{$trans->id}.pdf"
+        );
     }
 }

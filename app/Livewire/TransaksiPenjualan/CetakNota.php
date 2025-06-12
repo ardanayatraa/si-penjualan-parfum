@@ -11,7 +11,7 @@ class CetakNota extends Component
     public $open = false;
     public $transaksi;
 
-    protected $listeners = ['cetakNota' => 'show'];
+    protected $listeners = ['printNota' => 'show'];
 
     /**
      * Muat data transaksi dan buka modal

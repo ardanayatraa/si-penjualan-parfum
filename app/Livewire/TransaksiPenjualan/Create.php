@@ -57,7 +57,10 @@ class Create extends Component
     {
         $b = Barang::find($this->id_barang);
         if ($b && $value > $b->stok) {
-            $this->addError('jumlah_penjualan', 'Jumlah penjualan tidak boleh melebihi stok ('. $b->stok .').');
+            $this->addError(
+                'jumlah_penjualan',
+                "Jumlah penjualan tidak boleh melebihi stok ({$b->stok})."
+            );
             $this->jumlah_penjualan = $b->stok;
         } else {
             $this->resetErrorBag('jumlah_penjualan');
@@ -72,12 +75,12 @@ class Create extends Component
 
     private function recalculate()
     {
-        $this->subtotal = $this->harga_jual * $this->jumlah_penjualan;
-        $hpTotal        = $this->harga_pokok * $this->jumlah_penjualan;
+        $this->subtotal   = $this->harga_jual * $this->jumlah_penjualan;
+        $hpTotal         = $this->harga_pokok * $this->jumlah_penjualan;
         $this->laba_bruto = max(0, $this->subtotal - $hpTotal);
 
         if ($p = PajakTransaksi::find($this->id_pajak)) {
-            $this->total_harga = round($this->subtotal * (1 + $p->presentase / 100), 2);
+            $this->total_harga = round($this->subtotal * (1 + $p->presentase/100), 2);
         } else {
             $this->total_harga = $this->subtotal;
         }
@@ -93,7 +96,10 @@ class Create extends Component
             return;
         }
         if ($this->jumlah_penjualan > $barang->stok) {
-            $this->addError('jumlah_penjualan', 'Jumlah melebihi stok ('.$barang->stok.').');
+            $this->addError(
+                'jumlah_penjualan',
+                "Jumlah melebihi stok ({$barang->stok})."
+            );
             return;
         }
 
@@ -121,8 +127,8 @@ class Create extends Component
                 'keterangan' => "Penjualan {$barang->nama_barang}",
             ]);
 
-            // 4) Debit Kas/Bank (akun 1102)
-            $akunKas = Akun::where('kode_akun','1102')->firstOrFail();
+            // 4) Debit Kas (akun kode 1.1.01)
+            $akunKas = Akun::where('kode_akun', '1.1.01')->firstOrFail();
             DetailJurnal::create([
                 'jurnal_umum_id' => $j->id,
                 'akun_id'        => $akunKas->id,
@@ -130,22 +136,22 @@ class Create extends Component
                 'kredit'         => 0,
             ]);
 
-            // 5) Kredit Pendapatan (akun 4001) = subtotal
-            $akunPdpt = Akun::where('kode_akun','4001')->firstOrFail();
+            // 5) Kredit Penjualan Barang (akun kode 4.1.01) = subtotal
+            $akunPenjualan = Akun::where('kode_akun', '4.1.01')->firstOrFail();
             DetailJurnal::create([
                 'jurnal_umum_id' => $j->id,
-                'akun_id'        => $akunPdpt->id,
+                'akun_id'        => $akunPenjualan->id,
                 'debit'          => 0,
                 'kredit'         => $this->subtotal,
             ]);
 
-            // 6) Kredit Pajak Keluaran (akun 2102) = selisih pajak
+            // 6) Kredit PPN Keluaran (akun kode 2.1.02) = selisih pajak
             $pajakAmt = $this->total_harga - $this->subtotal;
             if ($pajakAmt > 0) {
-                $akunPjk = Akun::where('kode_akun','2102')->firstOrFail();
+                $akunPpn = Akun::where('kode_akun', '2.1.02')->firstOrFail();
                 DetailJurnal::create([
                     'jurnal_umum_id' => $j->id,
-                    'akun_id'        => $akunPjk->id,
+                    'akun_id'        => $akunPpn->id,
                     'debit'          => 0,
                     'kredit'         => $pajakAmt,
                 ]);
@@ -154,9 +160,9 @@ class Create extends Component
 
         // reset form
         $this->reset([
-            'id_barang','jumlah_penjualan','tanggal_transaksi',
-            'id_pajak','harga_jual','harga_pokok',
-            'subtotal','laba_bruto','total_harga',
+            'id_barang', 'jumlah_penjualan', 'tanggal_transaksi',
+            'id_pajak', 'harga_jual', 'harga_pokok',
+            'subtotal', 'laba_bruto', 'total_harga',
         ]);
 
         $this->dispatch('refreshDatatable');
