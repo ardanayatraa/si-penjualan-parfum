@@ -4,6 +4,9 @@ namespace App\Livewire\ReturnBarang;
 
 use Livewire\Component;
 use App\Models\ReturnBarang;
+use App\Models\Barang;
+use App\Models\JurnalUmum;
+use App\Models\DetailJurnal;
 
 class Delete extends Component
 {
@@ -17,14 +20,29 @@ class Delete extends Component
     public function confirmDelete($id)
     {
         $this->returnId = $id;
-        $this->open = true;
+        $this->open     = true;
     }
 
     public function delete()
     {
-        ReturnBarang::destroy($this->returnId);
+        $r = ReturnBarang::findOrFail($this->returnId);
 
-        $this->reset(['returnId']);
+        // 1) Restore stok
+        if ($barang = Barang::find($r->id_barang)) {
+            $barang->increment('stok', $r->jumlah);
+        }
+
+        // 2) Hapus jurnal lama (header + detail)
+        if ($r->jurnal_umum_id) {
+            DetailJurnal::where('jurnal_umum_id', $r->jurnal_umum_id)->delete();
+            JurnalUmum::where('id', $r->jurnal_umum_id)->delete();
+        }
+
+        // 3) Hapus record retur
+        $r->delete();
+
+        // Reset & notify
+        $this->reset('returnId');
         $this->dispatch('refreshDatatable');
         $this->open = false;
     }
