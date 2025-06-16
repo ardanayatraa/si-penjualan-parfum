@@ -17,6 +17,7 @@ class ReturnBarang extends Model
         'jumlah',
         'alasan',
         'tanggal_return',
+        'jurnal_umum_id'
     ];
 
     public function barang()

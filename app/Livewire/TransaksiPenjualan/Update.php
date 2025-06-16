@@ -151,7 +151,7 @@ class Update extends Component
             $j->detailJurnal()->delete();
 
             // Debit Kas/Bank (1102)
-            $akunKas = Akun::where('kode_akun','1102')->firstOrFail();
+            $akunKas = Akun::where('kode_akun','1.1.02')->firstOrFail();
             DetailJurnal::create([
                 'jurnal_umum_id' => $j->id,
                 'akun_id'        => $akunKas->id,
@@ -160,7 +160,7 @@ class Update extends Component
             ]);
 
             // Kredit Pendapatan (4001)
-            $akunPdpt = Akun::where('kode_akun','4001')->firstOrFail();
+            $akunPdpt = Akun::where('kode_akun','4.0.01')->firstOrFail();
             DetailJurnal::create([
                 'jurnal_umum_id' => $j->id,
                 'akun_id'        => $akunPdpt->id,
@@ -171,7 +171,7 @@ class Update extends Component
             // Kredit Pajak Keluaran (2102)
             $pajakAmt = $this->total_harga - $this->subtotal;
             if ($pajakAmt > 0) {
-                $akunPjk = Akun::where('kode_akun','2102')->firstOrFail();
+                $akunPjk = Akun::where('kode_akun','2.1.02')->firstOrFail();
                 DetailJurnal::create([
                     'jurnal_umum_id' => $j->id,
                     'akun_id'        => $akunPjk->id,
