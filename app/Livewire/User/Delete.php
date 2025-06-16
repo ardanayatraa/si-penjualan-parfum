@@ -23,7 +23,7 @@ class Delete extends Component
         User::where('id', $this->id)->delete();
 
         $this->reset();
-        $this->emit('refreshDatatable');
+        $this->dispatch('refreshDatatable');
         $this->open = false;
     }
 

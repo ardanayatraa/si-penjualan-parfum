@@ -49,7 +49,7 @@ class Delete extends Component
 
         // reset & refresh
         $this->reset('id');
-        $this->emit('refreshDatatable');
+        $this->dispatch('refreshDatatable');
         $this->open = false;
     }
 
