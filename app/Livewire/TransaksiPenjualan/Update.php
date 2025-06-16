@@ -16,17 +16,14 @@ class Update extends Component
     public $open = false;
     public $id_transaksi;
 
-    // Input
     public $id_barang;
     public $jumlah_penjualan = 1;
     public $tanggal_transaksi;
     public $id_pajak;
 
-    // Lookup
     public $harga_jual  = 0;
     public $harga_pokok = 0;
 
-    // Computed
     public $subtotal    = 0;
     public $laba_bruto  = 0;
     public $total_harga = 0;
@@ -45,7 +42,11 @@ class Update extends Component
 
     public function loadData($id)
     {
-        $t = TransaksiPenjualan::findOrFail($id);
+        $t = TransaksiPenjualan::find($id);
+        if (!$t) {
+            $this->dispatch('showError', message: 'Transaksi tidak ditemukan');
+            return;
+        }
 
         $this->id_transaksi      = $t->id;
         $this->id_barang         = $t->id_barang;
@@ -53,7 +54,6 @@ class Update extends Component
         $this->tanggal_transaksi = $t->tanggal_transaksi->format('Y-m-d');
         $this->id_pajak          = $t->id_pajak;
 
-        // lookup harga
         if ($b = Barang::find($this->id_barang)) {
             $this->harga_jual  = $b->harga_jual;
             $this->harga_pokok = $b->harga_beli;
@@ -79,7 +79,6 @@ class Update extends Component
 
     public function updatedJumlahPenjualan($value)
     {
-        // validasi against stok + old amount handled in update()
         $this->recalculate();
     }
 
@@ -105,20 +104,25 @@ class Update extends Component
     {
         $this->validate();
 
-        DB::transaction(function() {
-            $t = TransaksiPenjualan::findOrFail($this->id_transaksi);
+        DB::transaction(function () {
+            $t = TransaksiPenjualan::find($this->id_transaksi);
+            if (!$t) {
+                $this->dispatch('showError', message: 'Transaksi tidak ditemukan');
+                return;
+            }
+
             $oldBarangId  = $t->id_barang;
             $oldJumlah    = $t->jumlah_penjualan;
-            $bNew         = Barang::findOrFail($this->id_barang);
+            $bNew         = Barang::find($this->id_barang);
+            if (!$bNew) {
+                $this->dispatch('showError', message: 'Barang tidak ditemukan');
+                return;
+            }
 
-            // 1) rollback & adjust stok
             if ($oldBarangId !== $this->id_barang) {
-                // kembalikan stok lama
                 Barang::where('id', $oldBarangId)->increment('stok', $oldJumlah);
-                // kurangi stok barang baru
                 $bNew->decrement('stok', $this->jumlah_penjualan);
             } else {
-                // same barang: adjust selisih
                 $selisih = $this->jumlah_penjualan - $oldJumlah;
                 if ($selisih > 0) {
                     $bNew->decrement('stok', $selisih);
@@ -127,7 +131,6 @@ class Update extends Component
                 }
             }
 
-            // 2) update transaksi
             $t->update([
                 'id_barang'         => $this->id_barang,
                 'jumlah_penjualan'  => $this->jumlah_penjualan,
@@ -139,49 +142,54 @@ class Update extends Component
                 'total_harga'       => $this->total_harga,
             ]);
 
-            // 3) update jurnal umum header
             $noBukti = 'PNJ-' . $t->id;
-            $j = JurnalUmum::where('no_bukti', $noBukti)->firstOrFail();
+            $j = JurnalUmum::where('no_bukti', $noBukti)->first();
+            if (!$j) {
+                $this->dispatch('showError', message: 'Jurnal Umum tidak ditemukan');
+                return;
+            }
+
             $j->update([
                 'tanggal'    => $this->tanggal_transaksi,
                 'keterangan' => "Penjualan {$bNew->nama_barang}",
             ]);
 
-            // 4) hapus detail lama & tulis ulang
             $j->detailJurnal()->delete();
 
-            // Debit Kas/Bank (1102)
-            $akunKas = Akun::where('kode_akun','1.1.02')->firstOrFail();
-            DetailJurnal::create([
-                'jurnal_umum_id' => $j->id,
-                'akun_id'        => $akunKas->id,
-                'debit'          => $this->total_harga,
-                'kredit'         => 0,
-            ]);
-
-            // Kredit Pendapatan (4001)
-            $akunPdpt = Akun::where('kode_akun','4.0.01')->firstOrFail();
-            DetailJurnal::create([
-                'jurnal_umum_id' => $j->id,
-                'akun_id'        => $akunPdpt->id,
-                'debit'          => 0,
-                'kredit'         => $this->subtotal,
-            ]);
-
-            // Kredit Pajak Keluaran (2102)
-            $pajakAmt = $this->total_harga - $this->subtotal;
-            if ($pajakAmt > 0) {
-                $akunPjk = Akun::where('kode_akun','2.1.02')->firstOrFail();
+            $akunKas = Akun::where('kode_akun','1.1.02')->first();
+            if ($akunKas) {
                 DetailJurnal::create([
                     'jurnal_umum_id' => $j->id,
-                    'akun_id'        => $akunPjk->id,
-                    'debit'          => 0,
-                    'kredit'         => $pajakAmt,
+                    'akun_id'        => $akunKas->id,
+                    'debit'          => $this->total_harga,
+                    'kredit'         => 0,
                 ]);
+            }
+
+            $akunPdpt = Akun::where('kode_akun','4.0.01')->first();
+            if ($akunPdpt) {
+                DetailJurnal::create([
+                    'jurnal_umum_id' => $j->id,
+                    'akun_id'        => $akunPdpt->id,
+                    'debit'          => 0,
+                    'kredit'         => $this->subtotal,
+                ]);
+            }
+
+            $pajakAmt = $this->total_harga - $this->subtotal;
+            if ($pajakAmt > 0) {
+                $akunPjk = Akun::where('kode_akun','2.1.02')->first();
+                if ($akunPjk) {
+                    DetailJurnal::create([
+                        'jurnal_umum_id' => $j->id,
+                        'akun_id'        => $akunPjk->id,
+                        'debit'          => 0,
+                        'kredit'         => $pajakAmt,
+                    ]);
+                }
             }
         });
 
-        // reset & refresh
         $this->reset([
             'id_transaksi','id_barang','jumlah_penjualan',
             'tanggal_transaksi','id_pajak','harga_jual',
