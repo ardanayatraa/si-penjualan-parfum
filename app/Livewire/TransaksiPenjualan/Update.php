@@ -31,7 +31,7 @@ class Update extends Component
     public $laba_bruto  = 0;
     public $total_harga = 0;
 
-    protected $listeners = ['editTransaksi' => 'loadData'];
+    protected $listeners = ['edit' => 'loadData'];
 
     protected function rules()
     {

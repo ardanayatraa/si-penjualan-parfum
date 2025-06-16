@@ -36,7 +36,7 @@ class PajakTransaksiTable extends DataTableComponent
             Column::make('Aksi', 'id')
                 ->label(fn($row) => view('components.link-action', [
                     'id'           => $row->id,
-                    'editEvent'    => 'editPajak',
+                    'editEvent'    => 'edit',
                     'deleteEvent'  => 'deletePajak',
                 ]))
                 ->html(),
@@ -45,11 +45,11 @@ class PajakTransaksiTable extends DataTableComponent
 
     public function edit($id)
     {
-        $this->dispatch('editPajak', $id);
+        $this->dispatch('edit', $id);
     }
 
     public function delete($id)
     {
-        $this->dispatch('deletePajak', $id);
+        $this->dispatch('delete', $id);
     }
 }

@@ -11,7 +11,7 @@ class Update extends Component
     public $id_supplier;
     public $nama_supplier, $alamat, $no_telp;
 
-    protected $listeners = ['editSupplier' => 'loadData'];
+    protected $listeners = ['edit' => 'loadData'];
 
     protected $rules = [
         'nama_supplier' => 'required|string|max:255',

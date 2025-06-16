@@ -51,7 +51,7 @@ class BarangTable extends DataTableComponent
             Column::make('Aksi', 'id')
                 ->label(fn($row) => view('components.link-action', [
                     'id'        => $row->id,
-                    'editEvent' => 'editBarang',
+                    'editEvent' => 'edit',
                 ]))
                 ->html(),
         ];
@@ -59,6 +59,6 @@ class BarangTable extends DataTableComponent
 
     public function edit($id)
     {
-        $this->dispatch('editBarang', $id);
+        $this->dispatch('edit', $id);
     }
 }

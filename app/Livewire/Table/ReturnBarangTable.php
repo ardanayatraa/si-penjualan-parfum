@@ -52,8 +52,8 @@ class ReturnBarangTable extends DataTableComponent
             Column::make('Aksi', 'id')
                 ->label(fn($row) => view('components.link-action', [
                     'id'           => $row->id,
-                    'editEvent'    => 'editReturn',
-                    'deleteEvent'  => 'deleteReturn',
+                    'editEvent'    => 'edit',
+                    'deleteEvent'  => 'delete',
                 ]))
                 ->html(),
         ];
@@ -61,11 +61,11 @@ class ReturnBarangTable extends DataTableComponent
 
     public function edit($id)
     {
-        $this->dispatch('editReturn', $id);
+        $this->dispatch('edit', $id);
     }
 
     public function delete($id)
     {
-        $this->dispatch('deleteReturn', $id);
+        $this->dispatch('delete', $id);
     }
 }

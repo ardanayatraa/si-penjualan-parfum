@@ -14,7 +14,7 @@ class Delete extends Component
     public $returnId;
 
     protected $listeners = [
-        'deleteReturn' => 'confirmDelete'
+        'delete' => 'confirmDelete'
     ];
 
     public function confirmDelete($id)

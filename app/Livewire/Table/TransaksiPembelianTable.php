@@ -49,8 +49,8 @@ class TransaksiPembelianTable extends DataTableComponent
             Column::make('Aksi', 'id')
                 ->label(fn($row) => view('components.link-action', [
                     'id'           => $row->id,
-                    'editEvent'    => 'editTransaksi',
-                    'deleteEvent'  => 'deleteTransaksi',
+                    'editEvent'    => 'edit',
+                    'deleteEvent'  => 'delete',
                 ]))
                 ->html(),
         ];
@@ -58,11 +58,11 @@ class TransaksiPembelianTable extends DataTableComponent
 
     public function edit($id)
     {
-        $this->dispatch('editTransaksi', $id);
+        $this->dispatch('edit', $id);
     }
 
     public function delete($id)
     {
-        $this->dispatch('deleteTransaksi', $id);
+        $this->dispatch('delete', $id);
     }
 }

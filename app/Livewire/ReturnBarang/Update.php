@@ -23,7 +23,7 @@ class Update extends Component
     public $originalJumlah = 0;
     public $availableStok  = 0;
 
-    protected $listeners = ['editReturn' => 'loadData'];
+    protected $listeners = ['edit' => 'loadData'];
 
     protected $rules = [
         'id_barang'       => 'required|exists:barang,id',

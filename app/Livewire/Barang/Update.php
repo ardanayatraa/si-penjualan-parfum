@@ -13,7 +13,7 @@ class Update extends Component
     public $id_supplier;
     public $nama_barang, $satuan, $harga_beli, $harga_jual, $stok;
 
-    protected $listeners = ['editBarang' => 'loadData'];
+    protected $listeners = ['edit' => 'loadData'];
 
     protected $rules = [
         'id_supplier' => 'required|exists:supplier,id_supplier',

@@ -11,7 +11,7 @@ class Update extends Component
     public $pajakId;
     public $nama, $presentase;
 
-    protected $listeners = ['editPajak' => 'loadPajak'];
+    protected $listeners = ['edit' => 'loadPajak'];
 
     protected function rules()
     {

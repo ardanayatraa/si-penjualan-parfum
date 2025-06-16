@@ -20,7 +20,7 @@ class Update extends Component
     public $total;
     public $harga_beli = 0;
 
-    protected $listeners = ['editTransaksi' => 'loadData'];
+    protected $listeners = ['edit' => 'loadData'];
 
     protected function rules()
     {
