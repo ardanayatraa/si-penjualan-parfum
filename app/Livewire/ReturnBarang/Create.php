@@ -119,10 +119,6 @@ class Create extends Component
                 'kredit'        =>$nilai,
             ]);
         }
-
-        // Update referensi di return_barang (jika kolom ada)
-        $return->jurnal_umum_id = $j->id;
-        $return->save();
     }
 
     public function render()
