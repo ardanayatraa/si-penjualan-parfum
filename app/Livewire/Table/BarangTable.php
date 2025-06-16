@@ -57,7 +57,7 @@ class BarangTable extends DataTableComponent
         ];
     }
 
-    public function editBarang($id)
+    public function edit($id)
     {
         $this->dispatch('editBarang', $id);
     }

@@ -56,12 +56,12 @@ class TransaksiPembelianTable extends DataTableComponent
         ];
     }
 
-    public function editTransaksi($id)
+    public function edit($id)
     {
         $this->dispatch('editTransaksi', $id);
     }
 
-    public function deleteTransaksi($id)
+    public function delete($id)
     {
         $this->dispatch('deleteTransaksi', $id);
     }
