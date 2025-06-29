@@ -27,13 +27,17 @@ class SupplierTable extends DataTableComponent
             Column::make("No telp", "no_telp")
                 ->sortable(),
                 Column::make('Aksi', 'id_supplier')
-                ->label(fn ($row) => view('components.link-action', [
+                ->label(fn ($row) => view('components.link-action-supplier', [
                     'id' => $row->id_supplier,
                 ]))->html(),
 
         ];
     }
 
+        public function show($id)
+    {
+        $this->dispatch('showBarangs', $id);
+    }
 
     public function delete($id)
     {

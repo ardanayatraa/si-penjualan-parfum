@@ -11,44 +11,42 @@ use App\Models\DetailJurnal;
 use App\Models\Akun;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class Create extends Component
 {
     public $open = false;
 
-    // Input fields
     public $id_barang;
     public $jumlah_penjualan = 1;
     public $tanggal_transaksi;
     public $id_pajak;
 
-    // Lookup values
-    public $harga_jual  = 0;
-    public $harga_pokok = 0;
-
-    // Computed
-    public $subtotal    = 0;
-    public $laba_bruto  = 0;
+    public $harga_jual = 0;
     public $total_harga = 0;
 
     protected $rules = [
         'id_barang'        => 'required|exists:barang,id',
         'jumlah_penjualan' => 'required|integer|min:1',
         'tanggal_transaksi'=> 'required|date',
-        'id_pajak'         => 'required|exists:pajak_transaksi,id',
     ];
+
+    public function mount()
+    {
+        $this->tanggal_transaksi = Carbon::now()->toDateString();
+        $this->id_pajak = PajakTransaksi::find(1)?->id ?? null;
+    }
 
     public function updatedIdBarang($value)
     {
         $b = Barang::find($value);
         if ($b) {
-            $this->harga_jual  = $b->harga_jual;
-            $this->harga_pokok = $b->harga_beli;
+            $this->harga_jual = $b->harga_jual;
             if ($this->jumlah_penjualan > $b->stok) {
                 $this->jumlah_penjualan = $b->stok;
             }
         } else {
-            $this->harga_jual = $this->harga_pokok = 0;
+            $this->harga_jual = 0;
         }
         $this->recalculate();
     }
@@ -57,10 +55,7 @@ class Create extends Component
     {
         $b = Barang::find($this->id_barang);
         if ($b && $value > $b->stok) {
-            $this->addError(
-                'jumlah_penjualan',
-                "Jumlah penjualan tidak boleh melebihi stok ({$b->stok})."
-            );
+            $this->addError('jumlah_penjualan', "Jumlah penjualan tidak boleh melebihi stok ({$b->stok}).");
             $this->jumlah_penjualan = $b->stok;
         } else {
             $this->resetErrorBag('jumlah_penjualan');
@@ -75,14 +70,11 @@ class Create extends Component
 
     private function recalculate()
     {
-        $this->subtotal   = $this->harga_jual * $this->jumlah_penjualan;
-        $hpTotal         = $this->harga_pokok * $this->jumlah_penjualan;
-        $this->laba_bruto = max(0, $this->subtotal - $hpTotal);
-
+        $subtotal = $this->harga_jual * $this->jumlah_penjualan;
         if ($p = PajakTransaksi::find($this->id_pajak)) {
-            $this->total_harga = round($this->subtotal * (1 + $p->presentase/100), 2);
+            $this->total_harga = round($subtotal * (1 + $p->presentase / 100), 2);
         } else {
-            $this->total_harga = $this->subtotal;
+            $this->total_harga = $subtotal;
         }
     }
 
@@ -96,38 +88,32 @@ class Create extends Component
             return;
         }
         if ($this->jumlah_penjualan > $barang->stok) {
-            $this->addError(
-                'jumlah_penjualan',
-                "Jumlah melebihi stok ({$barang->stok})."
-            );
+            $this->addError('jumlah_penjualan', "Jumlah melebihi stok ({$barang->stok}).");
             return;
         }
 
-        DB::transaction(function() use ($barang) {
-            // 1) kurangi stok
+        DB::transaction(function () use ($barang) {
             $barang->decrement('stok', $this->jumlah_penjualan);
 
-            // 2) simpan transaksi
+            $harga_jual_total = $this->harga_jual * $this->jumlah_penjualan;
+
             $t = TransaksiPenjualan::create([
-                'id_kasir'           => Auth::id(),
-                'id_barang'          => $this->id_barang,
-                'jumlah_penjualan'   => $this->jumlah_penjualan,
-                'tanggal_transaksi'  => $this->tanggal_transaksi,
-                'id_pajak'           => $this->id_pajak,
-                'subtotal'           => $this->subtotal,
-                'harga_pokok'        => $this->harga_pokok * $this->jumlah_penjualan,
-                'laba_bruto'         => $this->laba_bruto,
-                'total_harga'        => $this->total_harga,
+                'id_kasir'         => Auth::id(),
+                'id_barang'        => $this->id_barang,
+                'jumlah_penjualan' => $this->jumlah_penjualan,
+                'tanggal_transaksi'=> $this->tanggal_transaksi,
+                'id_pajak'         => $this->id_pajak,
+                'harga_pokok'      => $barang->harga_jual,
+                'subtotal'       => $harga_jual_total,
+                'total_harga'      => $this->total_harga,
             ]);
 
-            // 3) header jurnal
             $j = JurnalUmum::create([
                 'tanggal'    => $this->tanggal_transaksi,
                 'no_bukti'   => 'PNJ-'.$t->id,
                 'keterangan' => "Penjualan {$barang->nama_barang}",
             ]);
 
-            // 4) Debit Kas (akun kode 1.1.01)
             $akunKas = Akun::where('kode_akun', '1.1.01')->firstOrFail();
             DetailJurnal::create([
                 'jurnal_umum_id' => $j->id,
@@ -136,17 +122,15 @@ class Create extends Component
                 'kredit'         => 0,
             ]);
 
-            // 5) Kredit Penjualan Barang (akun kode 4.1.01) = subtotal
             $akunPenjualan = Akun::where('kode_akun', '4.1.01')->firstOrFail();
             DetailJurnal::create([
                 'jurnal_umum_id' => $j->id,
                 'akun_id'        => $akunPenjualan->id,
                 'debit'          => 0,
-                'kredit'         => $this->subtotal,
+                'kredit'         => $harga_jual_total,
             ]);
 
-            // 6) Kredit PPN Keluaran (akun kode 2.1.02) = selisih pajak
-            $pajakAmt = $this->total_harga - $this->subtotal;
+            $pajakAmt = $this->total_harga - $harga_jual_total;
             if ($pajakAmt > 0) {
                 $akunPpn = Akun::where('kode_akun', '2.1.02')->firstOrFail();
                 DetailJurnal::create([
@@ -158,11 +142,9 @@ class Create extends Component
             }
         });
 
-        // reset form
         $this->reset([
             'id_barang', 'jumlah_penjualan', 'tanggal_transaksi',
-            'id_pajak', 'harga_jual', 'harga_pokok',
-            'subtotal', 'laba_bruto', 'total_harga',
+            'id_pajak', 'harga_jual', 'total_harga',
         ]);
 
         $this->dispatch('refreshDatatable');

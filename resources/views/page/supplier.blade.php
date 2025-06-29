@@ -19,4 +19,5 @@
     <!-- Modal Update & Delete -->
     @livewire('supplier.update')
     @livewire('supplier.delete')
+    @livewire('supplier.show-barang')
 </x-app-layout>

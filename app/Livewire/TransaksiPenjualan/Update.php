@@ -21,11 +21,7 @@ class Update extends Component
     public $tanggal_transaksi;
     public $id_pajak;
 
-    public $harga_jual  = 0;
-    public $harga_pokok = 0;
-
-    public $subtotal    = 0;
-    public $laba_bruto  = 0;
+    public $harga_jual = 0;
     public $total_harga = 0;
 
     protected $listeners = ['edit' => 'loadData'];
@@ -55,12 +51,9 @@ class Update extends Component
         $this->id_pajak          = $t->id_pajak;
 
         if ($b = Barang::find($this->id_barang)) {
-            $this->harga_jual  = $b->harga_jual;
-            $this->harga_pokok = $b->harga_beli;
+            $this->harga_jual = $b->harga_jual;
         }
 
-        $this->subtotal    = $t->subtotal;
-        $this->laba_bruto  = $t->laba_bruto;
         $this->total_harga = $t->total_harga;
 
         $this->open = true;
@@ -69,10 +62,9 @@ class Update extends Component
     public function updatedIdBarang($value)
     {
         if ($b = Barang::find($value)) {
-            $this->harga_jual  = $b->harga_jual;
-            $this->harga_pokok = $b->harga_beli;
+            $this->harga_jual = $b->harga_jual;
         } else {
-            $this->harga_jual = $this->harga_pokok = 0;
+            $this->harga_jual = 0;
         }
         $this->recalculate();
     }
@@ -89,14 +81,12 @@ class Update extends Component
 
     private function recalculate()
     {
-        $this->subtotal = $this->harga_jual * $this->jumlah_penjualan;
-        $hpTotal        = $this->harga_pokok * $this->jumlah_penjualan;
-        $this->laba_bruto = max(0, $this->subtotal - $hpTotal);
+        $harga_jual_total = $this->harga_jual * $this->jumlah_penjualan;
 
         if ($p = PajakTransaksi::find($this->id_pajak)) {
-            $this->total_harga = round($this->subtotal * (1 + $p->presentase / 100), 2);
+            $this->total_harga = round($harga_jual_total * (1 + $p->presentase / 100), 2);
         } else {
-            $this->total_harga = $this->subtotal;
+            $this->total_harga = $harga_jual_total;
         }
     }
 
@@ -131,14 +121,14 @@ class Update extends Component
                 }
             }
 
+            $harga_jual_total = $this->harga_jual * $this->jumlah_penjualan;
+
             $t->update([
                 'id_barang'         => $this->id_barang,
                 'jumlah_penjualan'  => $this->jumlah_penjualan,
                 'tanggal_transaksi' => $this->tanggal_transaksi,
                 'id_pajak'          => $this->id_pajak,
-                'subtotal'          => $this->subtotal,
-                'harga_pokok'       => $this->harga_pokok * $this->jumlah_penjualan,
-                'laba_bruto'        => $this->laba_bruto,
+                'harga_jual'        => $harga_jual_total,
                 'total_harga'       => $this->total_harga,
             ]);
 
@@ -156,7 +146,10 @@ class Update extends Component
 
             $j->detailJurnal()->delete();
 
-            $akunKas = Akun::where('kode_akun','1.1.02')->first();
+            $akunKas = Akun::where('kode_akun','1.1.01')->first();
+            $akunPdpt = Akun::where('kode_akun','4.1.01')->first();
+            $akunPjk = Akun::where('kode_akun','2.1.02')->first();
+
             if ($akunKas) {
                 DetailJurnal::create([
                     'jurnal_umum_id' => $j->id,
@@ -166,34 +159,29 @@ class Update extends Component
                 ]);
             }
 
-            $akunPdpt = Akun::where('kode_akun','4.0.01')->first();
             if ($akunPdpt) {
                 DetailJurnal::create([
                     'jurnal_umum_id' => $j->id,
                     'akun_id'        => $akunPdpt->id,
                     'debit'          => 0,
-                    'kredit'         => $this->subtotal,
+                    'kredit'         => $harga_jual_total,
                 ]);
             }
 
-            $pajakAmt = $this->total_harga - $this->subtotal;
-            if ($pajakAmt > 0) {
-                $akunPjk = Akun::where('kode_akun','2.1.02')->first();
-                if ($akunPjk) {
-                    DetailJurnal::create([
-                        'jurnal_umum_id' => $j->id,
-                        'akun_id'        => $akunPjk->id,
-                        'debit'          => 0,
-                        'kredit'         => $pajakAmt,
-                    ]);
-                }
+            $pajakAmt = $this->total_harga - $harga_jual_total;
+            if ($pajakAmt > 0 && $akunPjk) {
+                DetailJurnal::create([
+                    'jurnal_umum_id' => $j->id,
+                    'akun_id'        => $akunPjk->id,
+                    'debit'          => 0,
+                    'kredit'         => $pajakAmt,
+                ]);
             }
         });
 
         $this->reset([
             'id_transaksi','id_barang','jumlah_penjualan',
-            'tanggal_transaksi','id_pajak','harga_jual',
-            'harga_pokok','subtotal','laba_bruto','total_harga',
+            'tanggal_transaksi','id_pajak','harga_jual','total_harga',
         ]);
         $this->dispatch('refreshDatatable');
         $this->open = false;

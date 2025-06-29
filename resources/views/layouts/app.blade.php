@@ -109,11 +109,6 @@
                                 <span>Transaksi Penjualan</span>
                             </a>
 
-                            <a href="{{ route('pajak-transaksi') }}"
-                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('pajak-transaksi') ? 'sidebar-active' : '' }}">
-                                <i class="fas fa-receipt w-5 h-5 mr-3"></i>
-                                <span>Pajak Transaksi</span>
-                            </a>
 
                             <a href="{{ route('return-barang') }}"
                                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('return-barang') ? 'sidebar-active' : '' }}">
@@ -128,19 +123,23 @@
                                 <span>User</span>
                             </a>
 
+                            <a href="{{ route('accounting') }}"
+                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('accounting') ? 'sidebar-active' : '' }}">
+                                <i class="fas fa-book w-5 h-5 mr-3"></i>
+                                <span>Akun</span>
 
 
-                            <a href="{{ route('laporan') }}"
-                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('laporan') ? 'sidebar-active' : '' }}">
-                                <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
-                                <span>Laporan</span>
-                            </a>
+                                <a href="{{ route('laporan') }}"
+                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('laporan') ? 'sidebar-active' : '' }}">
+                                    <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
+                                    <span>Laporan</span>
+                                </a>
 
-                            <a href="{{ route('grafik.penjualan') }}"
-                                class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('grafik.penjualan') ? 'sidebar-active' : '' }}">
-                                <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
-                                <span>Grafik Penjualan</span>
-                            </a>
+                                <a href="{{ route('grafik.penjualan') }}"
+                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('grafik.penjualan') ? 'sidebar-active' : '' }}">
+                                    <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                                    <span>Grafik Penjualan</span>
+                                </a>
                         @endif
 
                         {{-- Menu untuk KASIR --}}

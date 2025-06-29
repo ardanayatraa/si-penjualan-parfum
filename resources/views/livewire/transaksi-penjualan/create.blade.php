@@ -44,37 +44,24 @@
                     @enderror
                 </div>
 
-                {{-- Pilih Pajak --}}
+                {{-- Pajak --}}
                 <div>
-                    <x-label for="id_pajak" value="Pajak (%)" />
-                    <select id="id_pajak" wire:model.live="id_pajak" class="w-full border-gray-300 rounded-md">
-                        <option value="">-- Pilih Pajak --</option>
+                    <x-label for="id_pajak" value="Pajak" />
+                    <select id="id_pajak" wire:model="id_pajak"
+                        class="w-full border-gray-300 rounded-md pointer-events-none bg-gray-100">
+                        <option value="">-- Tanpa Pajak --</option>
                         @foreach ($listPajak as $p)
-                            <option value="{{ $p->id }}">
-                                {{ $p->nama }} ({{ $p->presentase }}%)
-                            </option>
+                            <option value="{{ $p->id }}">{{ $p->nama }} ({{ $p->presentase }}%)</option>
                         @endforeach
                     </select>
-                    @error('id_pajak')
-                        <span class="text-red-500 text-sm">{{ $message }}</span>
-                    @enderror
+
                 </div>
 
                 {{-- Hasil Perhitungan --}}
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <x-label value="Subtotal (Rp)" />
-                        <x-input type="text" readonly :value="number_format($subtotal, 0, ',', '.')" class="w-full bg-gray-100 rounded-md" />
-                    </div>
-                    <div>
-                        <x-label value="Harga Pokok Total (Rp)" />
-                        <x-input type="text" readonly :value="number_format($harga_pokok * $jumlah_penjualan, 0, ',', '.')" class="w-full bg-gray-100 rounded-md" />
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <x-label value="Laba Bruto (Rp)" />
-                        <x-input type="text" readonly :value="number_format($laba_bruto, 0, ',', '.')" class="w-full bg-gray-100 rounded-md" />
+                        <x-label value="Harga Jual (Rp)" />
+                        <x-input type="text" readonly :value="number_format($harga_jual * $jumlah_penjualan, 0, ',', '.')" class="w-full bg-gray-100 rounded-md" />
                     </div>
                     <div>
                         <x-label value="Total Harga (+ Pajak) (Rp)" />

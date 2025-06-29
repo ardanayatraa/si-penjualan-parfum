@@ -13,6 +13,7 @@ class CreateSupplierTable extends Migration
             $table->string('nama_supplier');
             $table->text('alamat')->nullable();
             $table->string('no_telp');
+            $table->json('id_barang')->nullable();
             $table->timestamps();
         });
     }

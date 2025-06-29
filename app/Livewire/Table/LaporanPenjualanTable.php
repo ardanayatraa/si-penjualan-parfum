@@ -99,9 +99,6 @@ class LaporanPenjualanTable extends DataTableComponent
                 ->sortable()
                 ->format(fn($v) => 'Rp '.number_format($v,0,',','.')),
 
-            Column::make('Laba Bruto','laba_bruto')
-                ->sortable()
-                ->format(fn($v) => 'Rp '.number_format($v,0,',','.')),
 
             Column::make('Total Harga','total_harga')
                 ->sortable()

@@ -16,6 +16,12 @@ class Supplier extends Model
         'nama_supplier',
         'alamat',
         'no_telp',
+        'id_barang'
+    ];
+
+
+     protected $casts = [
+        'id_barang' => 'array',
     ];
 
     public function barangs()

@@ -59,6 +59,10 @@ Route::middleware([
     return view('page.return');
 })->name('return-barang');
 
+    Route::get('/acounting', function () {
+        return view('page.accounting');
+    })->name('accounting');
+
 
     Route::get('/pajak-transaksi', function () {
         return view('page.pajak-transaksi');

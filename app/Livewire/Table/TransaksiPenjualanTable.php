@@ -52,9 +52,7 @@ class TransaksiPenjualanTable extends DataTableComponent
                 ->sortable()
                 ->format(fn($value) => number_format($value, 2, ',', '.')),
 
-            Column::make('Laba Bruto', 'laba_bruto')
-                ->sortable()
-                ->format(fn($value) => number_format($value, 2, ',', '.')),
+
 
             Column::make('Total Harga', 'total_harga')
                 ->sortable()
