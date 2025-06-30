@@ -45,7 +45,7 @@
 </head>
 
 <body>
-    <h2>Laporan Stok Barang</h2>
+    <h2>Laporan Stok & Transaksi Barang</h2>
 
     <table>
         <thead>
@@ -56,6 +56,10 @@
                 <th>Harga Beli</th>
                 <th>Harga Jual</th>
                 <th>Stok</th>
+                <th>Qty Beli</th>
+                <th>Total Beli</th>
+                <th>Qty Jual</th>
+                <th>Total Jual</th>
             </tr>
         </thead>
         <tbody>
@@ -67,6 +71,10 @@
                     <td>Rp {{ number_format($item->harga_beli, 0, ',', '.') }}</td>
                     <td>Rp {{ number_format($item->harga_jual, 0, ',', '.') }}</td>
                     <td>{{ $item->stok }}</td>
+                    <td>{{ $item->qty_pembelian ?? 0 }}</td>
+                    <td>Rp {{ number_format($item->nilai_pembelian ?? 0, 0, ',', '.') }}</td>
+                    <td>{{ $item->qty_penjualan ?? 0 }}</td>
+                    <td>Rp {{ number_format($item->nilai_penjualan ?? 0, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -74,7 +82,9 @@
 
     <div class="summary">
         <p>Total Stok: {{ $totalStok }}</p>
-        <p>Total Nilai Stok: Rp {{ number_format($totalNilai, 0, ',', '.') }}</p>
+        <p>Total Nilai Stok: Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}</p>
+        <p>Total Harga Pembelian: Rp {{ number_format($totalNilaiBeli, 0, ',', '.') }}</p>
+        <p>Total Harga Penjualan: Rp {{ number_format($totalNilaiJual, 0, ',', '.') }}</p>
     </div>
 </body>
 
