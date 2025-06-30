@@ -9,6 +9,7 @@ use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Rappasoft\LaravelLivewireTables\Views\Columns\SumColumn;
 
 class LaporanLabaRugiTable extends DataTableComponent
 {
@@ -48,8 +49,12 @@ class LaporanLabaRugiTable extends DataTableComponent
         return [
             Column::make('No Akun', 'kode_akun')->sortable(),
             Column::make('Nama Akun', 'nama_akun')->sortable(),
-            Column::make('Jumlah')
-                ->label(fn($row) => $this->formatRupiah($this->sumAccount($row))),
+            SumColumn::make('Debit')
+            ->setDataSource('detailJurnal','debit')
+            ->sortable(),
+            SumColumn::make('Credit')
+            ->setDataSource('detailJurnal','kredit')
+            ->sortable(),
         ];
     }
 

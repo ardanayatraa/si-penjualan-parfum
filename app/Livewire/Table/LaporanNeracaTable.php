@@ -9,6 +9,7 @@ use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Rappasoft\LaravelLivewireTables\Views\Columns\SumColumn;
 
 class LaporanNeracaTable extends DataTableComponent
 {
@@ -51,13 +52,21 @@ class LaporanNeracaTable extends DataTableComponent
         ];
     }
 
-    public function columns(): array
-    {
-        return [
-            Column::make('No Akun', 'kode_akun')->sortable(),
-            Column::make('Nama Akun', 'nama_akun')->sortable(),
-        ];
-    }
+public function columns(): array
+{
+    return [
+        Column::make('No Akun', 'kode_akun')->sortable(),
+        Column::make('Nama Akun', 'nama_akun')->sortable(),
+        SumColumn::make('Debit')
+            ->setDataSource('detailJurnal','debit')
+            ->sortable(),
+        SumColumn::make('Credit')
+            ->setDataSource('detailJurnal','kredit')
+            ->sortable(),
+
+    ];
+}
+
 
     private function sumSide($akun, string $field): float
     {

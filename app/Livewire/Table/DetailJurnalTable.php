@@ -29,6 +29,10 @@ class DetailJurnalTable extends DataTableComponent
                 ->sortable()
                 ->searchable(),
 
+            Column::make('keterangan', 'keterangan')
+                ->sortable()
+                ->searchable(),
+
             Column::make('Akun', 'akun.nama_akun')
                 ->sortable()
                 ->searchable(),
