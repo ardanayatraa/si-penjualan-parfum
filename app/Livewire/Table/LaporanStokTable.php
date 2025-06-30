@@ -56,13 +56,13 @@ class LaporanStokTable extends DataTableComponent
 
             Column::make('Stok', 'stok')->sortable(),
 
-            Column::make('Qty Beli', 'qty_pembelian')
+            Column::make('Jumlah Beli', 'qty_pembelian')
                 ->label(fn($row) => $row->qty_pembelian ?? 0),
 
             Column::make('Total Beli', 'nilai_pembelian')
                 ->label(fn($row) => 'Rp '.number_format($row->nilai_pembelian ?? 0,0,',','.') ),
 
-            Column::make('Qty Jual', 'qty_penjualan')
+            Column::make('Jumlah Jual', 'qty_penjualan')
                 ->label(fn($row) => $row->qty_penjualan ?? 0),
 
             Column::make('Total Jual', 'nilai_penjualan')
