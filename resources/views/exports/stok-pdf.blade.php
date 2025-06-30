@@ -56,9 +56,9 @@
                 <th>Harga Beli</th>
                 <th>Harga Jual</th>
                 <th>Stok</th>
-                <th>Qty Beli</th>
+                <th>Jumlah Beli</th>
                 <th>Total Beli</th>
-                <th>Qty Jual</th>
+                <th>Jumlah Jual</th>
                 <th>Total Jual</th>
             </tr>
         </thead>
