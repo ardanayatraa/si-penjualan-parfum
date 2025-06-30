@@ -16,7 +16,6 @@ class CreateTransaksiPenjualanTable extends Migration
             $table->dateTime('tanggal_transaksi');
             $table->decimal('subtotal', 15, 2);
             $table->decimal('harga_pokok', 15, 2);
-            $table->decimal('laba_bruto', 15, 2);
             $table->decimal('total_harga', 15, 2);
             $table->integer('jumlah_penjualan');
             $table->timestamps();

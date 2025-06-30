@@ -126,7 +126,7 @@
                             <a href="{{ route('accounting') }}"
                                 class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('accounting') ? 'sidebar-active' : '' }}">
                                 <i class="fas fa-book w-5 h-5 mr-3"></i>
-                                <span>Akun</span>
+                                <span>Accounting</span>
 
 
                                 <a href="{{ route('laporan') }}"
