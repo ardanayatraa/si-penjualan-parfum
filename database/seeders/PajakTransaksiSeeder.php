@@ -9,7 +9,6 @@ class PajakTransaksiSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('pajak_transaksi')->truncate();
 
         DB::table('pajak_transaksi')->insert([
             'id' => 1,
