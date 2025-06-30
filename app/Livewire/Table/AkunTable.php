@@ -42,7 +42,7 @@ class AkunTable extends DataTableComponent
                 ->searchable(),
 
             Column::make('Aksi', 'id')
-                ->label(fn($row) => view('components.link-action', [
+                ->label(fn($row) => view('components.link-action-akun', [
                     'id'          => $row->id,
                     'editEvent'   => 'edit',
                     'deleteEvent' => 'delete',
