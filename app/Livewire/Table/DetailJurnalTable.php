@@ -4,6 +4,7 @@ namespace App\Livewire\Table;
 
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
+use Illuminate\Database\Eloquent\Builder;
 use App\Models\DetailJurnal;
 
 class DetailJurnalTable extends DataTableComponent
@@ -19,17 +20,25 @@ class DetailJurnalTable extends DataTableComponent
         ]);
     }
 
+    public function builder(): Builder
+    {
+        return DetailJurnal::query()
+            ->with(['jurnalUmum', 'akun']);
+    }
+
     public function columns(): array
     {
         return [
             Column::make('ID', 'id')
                 ->sortable(),
 
-            Column::make('Jurnal (No. Bukti)', 'jurnalUmum.no_bukti')
+            Column::make('No. Bukti', 'jurnalUmum.no_bukti')
                 ->sortable()
                 ->searchable(),
 
-
+            Column::make('Keterangan', 'jurnalUmum.keterangan')
+                ->sortable()
+                ->searchable(),
 
             Column::make('Akun', 'akun.nama_akun')
                 ->sortable()
