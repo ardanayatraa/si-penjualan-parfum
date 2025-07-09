@@ -14,10 +14,12 @@ class Piutang extends Model
         'id_penjualan',
         'jumlah',
         'status',
+        'nama_pelanggan', // Tambahan untuk menyimpan nama pelanggan
+        'no_telp',        // Tambahan untuk menyimpan nomor telepon pelanggan
     ];
 
     public function penjualan()
     {
         return $this->belongsTo(\App\Models\TransaksiPenjualan::class, 'id_penjualan', 'id_penjualan');
     }
-} 
+}

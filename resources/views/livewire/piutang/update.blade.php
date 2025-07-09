@@ -16,6 +16,23 @@
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
+
+                <div>
+                    <x-label for="nama_pelanggan" value="Nama Pelanggan" />
+                    <x-input id="nama_pelanggan" wire:model.defer="nama_pelanggan" type="text" />
+                    @error('nama_pelanggan')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div>
+                    <x-label for="no_telp" value="No Telepon" />
+                    <x-input id="no_telp" wire:model.defer="no_telp" type="text" />
+                    @error('no_telp')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                    @enderror
+                </div>
+
                 <div>
                     <x-label for="jumlah" value="Jumlah Piutang" />
                     <x-input id="jumlah" type="number" step="0.01" wire:model.defer="jumlah" />
@@ -23,6 +40,7 @@
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
+
                 <div>
                     <x-label for="status" value="Status" />
                     <x-input id="status" wire:model.defer="status" />

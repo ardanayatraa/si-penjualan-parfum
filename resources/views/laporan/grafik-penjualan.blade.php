@@ -13,15 +13,7 @@
                         </p>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button id="btn-export"
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
-                                </path>
-                            </svg>
-                            Export
-                        </button>
+
                         <button id="btn-refresh"
                             class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,13 +216,7 @@
                     <div id="chartTrend" class="relative h-80"></div>
                 </div>
 
-                {{-- Comparison Chart --}}
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Perbandingan Kategori</h2>
-                    </div>
-                    <div id="chartComparison" class="relative h-80"></div>
-                </div>
+
             </div>
         </div>
 
@@ -258,7 +244,6 @@
         let chartProfit = null;
         let chartProduk = null;
         let chartTrend = null;
-        let chartComparison = null;
         let currentChartType = 'bar';
 
         // Utility functions
@@ -648,12 +633,6 @@
                 }]
             };
 
-            if (chartComparison) {
-                chartComparison.updateOptions(options);
-            } else {
-                chartComparison = new ApexCharts(document.querySelector("#chartComparison"), options);
-                chartComparison.render();
-            }
         }
 
         // Get URL parameters for API calls
@@ -824,15 +803,6 @@
             }
         }
 
-        // Export functionality
-        function exportCharts() {
-            // Get current data
-            const range = document.getElementById('filter-range').value;
-            const periode = document.getElementById('periode-text').textContent;
-
-            // You can implement PDF export here using jsPDF or similar library
-            alert('Export functionality akan segera tersedia!');
-        }
 
         // Toggle chart type
         function toggleChartType() {
@@ -859,7 +829,6 @@
             // Button events
             document.getElementById('btn-lihat').addEventListener('click', fetchDataAndRender);
             document.getElementById('btn-refresh').addEventListener('click', fetchDataAndRender);
-            document.getElementById('btn-export').addEventListener('click', exportCharts);
             document.getElementById('btn-chart-type').addEventListener('click', toggleChartType);
 
             // Date input events
@@ -898,11 +867,6 @@
                 }
             });
             if (chartTrend) chartTrend.updateOptions({
-                chart: {
-                    width: '100%'
-                }
-            });
-            if (chartComparison) chartComparison.updateOptions({
                 chart: {
                     width: '100%'
                 }

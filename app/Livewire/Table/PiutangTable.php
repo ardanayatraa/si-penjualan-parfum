@@ -23,8 +23,17 @@ class PiutangTable extends DataTableComponent
                 ->searchable()
                 ->html()
                 ->format(fn($value) => '<strong>' . $value . '</strong>'),
+
             Column::make('ID Penjualan', 'id_penjualan')
                 ->sortable(),
+
+            Column::make('Nama Pelanggan', 'nama_pelanggan')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('No Telepon', 'no_telp')
+                ->sortable()
+                ->searchable(),
 
             Column::make('Jumlah', 'jumlah')
                 ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
@@ -35,7 +44,6 @@ class PiutangTable extends DataTableComponent
             Column::make('Aksi', 'id_piutang')
                 ->label(fn ($row) => view('components.link-action', [
                     'id' => $row->id_piutang,
-
                 ]))
                 ->html(),
         ];
