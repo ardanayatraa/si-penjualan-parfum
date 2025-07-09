@@ -47,6 +47,12 @@ class Admin extends Component
                     'route' => route('transaksi-penjualan'),
                     'color' => 'bg-red-500',
                 ],
+                [
+                    'label' => 'Pembelian',
+                    'count' => TransaksiPembelian::count(),
+                    'route' => route('transaksi-pembelian'),
+                    'color' => 'bg-cyan-500',
+                ],
 
                 [
                     'label' => 'User',
