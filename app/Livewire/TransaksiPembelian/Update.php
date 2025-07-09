@@ -31,10 +31,7 @@ class Update extends Component
     // Payment method options
     public $metodePembayaranOptions = [
         'cash' => 'Tunai',
-        'transfer' => 'Transfer Bank',
         'credit' => 'Kredit/Hutang',
-        'debit_card' => 'Kartu Debit',
-        'e_wallet' => 'E-Wallet',
     ];
 
     protected $listeners = ['edit' => 'loadData'];
