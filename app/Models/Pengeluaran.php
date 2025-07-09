@@ -38,8 +38,9 @@ class Pengeluaran extends Model
     // Relationship dengan User
     public function user()
     {
-        return $this->belongsTo(User::class, 'id_user', 'id_user');
+        return $this->belongsTo(User::class, 'id_user', 'id');
     }
+
 
     // Scope untuk filter berdasarkan tanggal
     public function scopeByDate($query, $date)
