@@ -1,7 +1,5 @@
 <?php
 
-// Model Pengeluaran (sudah ada di schema)
-// File: app/Models/Pengeluaran.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

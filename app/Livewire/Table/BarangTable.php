@@ -104,29 +104,7 @@ class BarangTable extends DataTableComponent
                 })
                 ->html(),
 
-            Column::make('Stok', 'stok')
-                ->sortable()
-                ->label(function($row) {
-                    $badgeClass = match(true) {
-                        $row->stok == 0 => 'bg-red-100 text-red-800',
-                        $row->stok <= 10 => 'bg-yellow-100 text-yellow-800',
-                        default => 'bg-green-100 text-green-800'
-                    };
-
-                    $statusText = match(true) {
-                        $row->stok == 0 => 'Habis',
-                        $row->stok <= 10 => 'Menipis',
-                        default => 'Aman'
-                    };
-
-                    return '<div class="text-center">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' . $badgeClass . '">
-                                    ' . $row->stok . '
-                                </span>
-                                <div class="text-xs text-gray-500 mt-1">' . $statusText . '</div>
-                            </div>';
-                })
-                ->html(),
+            Column::make('Stok', 'stok'),
 
             Column::make('Nilai Stok', 'id')
                 ->label(function($row) {
