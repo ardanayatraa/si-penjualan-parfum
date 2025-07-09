@@ -9,14 +9,13 @@ class CreateAkunTable extends Migration
     public function up()
     {
         Schema::create('akun', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('kode_akun', 20)->unique();
-            $table->string('nama_akun', 100);
-            $table->enum('tipe_akun', ['aset', 'kewajiban', 'modal', 'pendapatan', 'beban']);
-            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->increments('id_akun'); // sesuai dengan ERD
+            $table->string('kode_akun', 10)->unique(); // maksimal 10 karakter
+            $table->string('nama_akun', 50);
+            $table->string('tipe_akun', 50); // tidak lagi enum agar fleksibel
+            $table->string('kategori_akun', 50)->nullable();
+            $table->decimal('saldo_awal', 15, 2)->default(0);
             $table->timestamps();
-
-            $table->foreign('parent_id')->references('id')->on('akun')->onDelete('set null')->onUpdate('cascade');
         });
     }
 

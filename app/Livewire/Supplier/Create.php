@@ -30,10 +30,9 @@ class Create extends Component
             'nama_supplier' => $this->nama_supplier,
             'alamat'        => $this->alamat,
             'no_telp'       => $this->no_telp,
-            'id_barang'     => $this->id_barang, // akan di–cast ke JSON
         ]);
 
-        $this->reset(['nama_supplier','alamat','no_telp','id_barang','open']);
+        $this->reset(['nama_supplier','alamat','no_telp','open']);
         $this->dispatch('refreshDatatable');
     }
 

@@ -59,7 +59,7 @@ Route::middleware([
     return view('page.return');
 })->name('return-barang');
 
-    Route::get('/acounting', function () {
+    Route::get('/accounting', function () {
         return view('page.accounting');
     })->name('accounting');
 
@@ -79,6 +79,18 @@ Route::middleware([
     Route::get('/grafik-penjualan', [\App\Http\Controllers\GrafikPenjualanController::class, 'index'])->name('grafik.penjualan');
     Route::get('/grafik-penjualan/profit', [\App\Http\Controllers\GrafikPenjualanController::class, 'grafikProfit']);
     Route::get('/grafik-penjualan/produk-terlaris', [\App\Http\Controllers\GrafikPenjualanController::class, 'grafikProdukTerlaris']);
+
+    Route::get('/pengeluaran', function () {
+        return view('page.pengeluaran');
+    })->name('pengeluaran');
+
+    Route::get('/hutang', function () {
+        return view('page.hutang');
+    })->name('hutang');
+
+    Route::get('/piutang', function () {
+        return view('page.piutang');
+    })->name('piutang');
 
 });
 

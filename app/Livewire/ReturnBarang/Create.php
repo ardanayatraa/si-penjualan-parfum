@@ -100,25 +100,7 @@ class Create extends Component
 
         $nilai = $barang->harga_pokok * $return->jumlah; // nilai pokok retur
 
-        // Debit Hutang Dagang (mengurangi hutang)
-        if ($akunHutang) {
-            DetailJurnal::create([
-                'jurnal_umum_id'=>$j->id,
-                'akun_id'       =>$akunHutang->id,
-                'debit'         =>$nilai,
-                'kredit'        =>0,
-            ]);
-        }
-
-        // Kredit Persediaan Barang (mengembalikan persediaan)
-        if ($akunPersediaan) {
-            DetailJurnal::create([
-                'jurnal_umum_id'=>$j->id,
-                'akun_id'       =>$akunPersediaan->id,
-                'debit'         =>0,
-                'kredit'        =>$nilai,
-            ]);
-        }
+        // Hapus proses DetailJurnal::create
     }
 
     public function render()

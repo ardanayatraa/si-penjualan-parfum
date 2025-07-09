@@ -12,8 +12,9 @@ class AkunTable extends DataTableComponent
 
     public function configure(): void
     {
-        $this->setPrimaryKey('id');
-        $this->setTrAttributes(fn($row, $index) => [
+        $this->setPrimaryKey('id_akun');
+
+        $this->setTrAttributes(fn ($row, $index) => [
             'default' => true,
             'class'   => $index % 2 === 0 ? 'bg-gray-200' : '',
         ]);
@@ -22,7 +23,7 @@ class AkunTable extends DataTableComponent
     public function columns(): array
     {
         return [
-            Column::make('ID', 'id')
+            Column::make('ID', 'id_akun')
                 ->sortable(),
 
             Column::make('Kode Akun', 'kode_akun')
@@ -37,13 +38,17 @@ class AkunTable extends DataTableComponent
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Parent', 'parent.nama_akun')
+            Column::make('Kategori Akun', 'kategori_akun')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Aksi', 'id')
-                ->label(fn($row) => view('components.link-action-akun', [
-                    'id'          => $row->id,
+            Column::make('Saldo Awal', 'saldo_awal')
+                ->sortable()
+                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
+
+            Column::make('Aksi', 'id_akun')
+                ->label(fn ($row) => view('components.link-action-akun', [
+                    'id'          => $row->id_akun,
                     'editEvent'   => 'edit',
                     'deleteEvent' => 'delete',
                 ]))
@@ -53,11 +58,11 @@ class AkunTable extends DataTableComponent
 
     public function edit($id)
     {
-        $this->dispatch('edit', $id);
+        $this->dispatch('editAkun', $id);
     }
 
     public function delete($id)
     {
-        $this->dispatch('delete', $id);
+        $this->dispatch('deleteAkun', $id);
     }
 }

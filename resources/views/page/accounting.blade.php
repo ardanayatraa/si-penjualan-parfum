@@ -27,6 +27,30 @@
                     class="pb-2 font-medium">
                     Jurnal Umum
                 </button>
+                <button @click="tab = 'pengeluaran'"
+                    :class="tab === 'pengeluaran'
+                        ?
+                        'text-indigo-600 border-b-2 border-indigo-600' :
+                        'text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white'"
+                    class="pb-2 font-medium">
+                    Pengeluaran
+                </button>
+                <button @click="tab = 'hutang'"
+                    :class="tab === 'hutang'
+                        ?
+                        'text-indigo-600 border-b-2 border-indigo-600' :
+                        'text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white'"
+                    class="pb-2 font-medium">
+                    Hutang
+                </button>
+                <button @click="tab = 'piutang'"
+                    :class="tab === 'piutang'
+                        ?
+                        'text-indigo-600 border-b-2 border-indigo-600' :
+                        'text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white'"
+                    class="pb-2 font-medium">
+                    Piutang
+                </button>
             </nav>
 
             <div class="mt-6 space-y-6">
@@ -42,7 +66,28 @@
                 <section x-show="tab === 'jurnal'">
                     @livewire('jurnal-umum.create')
                     <div class="overflow-x-auto">
-                        @livewire('table.detail-jurnal-table')
+                        @livewire('table.jurnal-umum-table')
+                    </div>
+                </section>
+
+                <!-- Pengeluaran Tab -->
+                <section x-show="tab === 'pengeluaran'">
+                    @livewire('pengeluaran.create')
+                    <div class="overflow-x-auto">
+                        @livewire('table.pengeluaran-table')
+                    </div>
+                </section>
+
+                <!-- Hutang Tab -->
+                <section x-show="tab === 'hutang'">
+                    @include('livewire.hutang.index')
+                </section>
+
+                <!-- Piutang Tab -->
+                <section x-show="tab === 'piutang'">
+                    @livewire('piutang.create')
+                    <div class="overflow-x-auto">
+                        @livewire('table.piutang-table')
                     </div>
                 </section>
             </div>
@@ -52,6 +97,21 @@
     <!-- Modals Update & Delete Akun -->
     @livewire('akun.update')
     @livewire('akun.delete')
+
+    <!-- Modals Update & Delete Pengeluaran -->
+    @livewire('pengeluaran.update')
+    @livewire('pengeluaran.delete')
+
+    <!-- Modals Update & Delete Hutang -->
+    @livewire('hutang.update')
+    @livewire('hutang.delete')
+
+    <!-- Modals Update & Delete Piutang -->
+    @livewire('piutang.update')
+    @livewire('piutang.delete')
+
+
+
 
     <!-- Modals Update & Delete Jurnal Umum -->
     @livewire('jurnal-umum.update')

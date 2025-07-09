@@ -67,67 +67,61 @@ class Update extends Component
     }
 
     public function update()
-    {
-        $this->validate();
+{
+    $this->validate();
 
-        DB::transaction(function() {
-            // ambil transaksi & jurnal terkait
-            $t = TransaksiPembelian::findOrFail($this->transaksiId);
-            $oldBarangId = $t->id_barang;
-            $oldJumlah   = $t->jumlah_pembelian;
+    DB::transaction(function() {
+        $t = TransaksiPembelian::findOrFail($this->transaksiId);
+        $oldBarangId = $t->id_barang;
+        $oldJumlah   = $t->jumlah_pembelian;
 
-            // 1) rollback & adjust stok
-            if ($oldBarangId === $this->id_barang) {
-                $selisih = $this->jumlah_pembelian - $oldJumlah;
-                Barang::where('id', $this->id_barang)->increment('stok', $selisih);
-            } else {
-                Barang::where('id', $oldBarangId)->decrement('stok', $oldJumlah);
-                Barang::where('id', $this->id_barang)->increment('stok', $this->jumlah_pembelian);
-            }
+        // 1) Perbarui stok barang
+        if ($oldBarangId === $this->id_barang) {
+            $selisih = $this->jumlah_pembelian - $oldJumlah;
+            Barang::where('id', $this->id_barang)->increment('stok', $selisih);
+        } else {
+            Barang::where('id', $oldBarangId)->decrement('stok', $oldJumlah);
+            Barang::where('id', $this->id_barang)->increment('stok', $this->jumlah_pembelian);
+        }
 
-            // 2) update transaksi
-            $t->update([
-                'id_barang'         => $this->id_barang,
-                'tanggal_transaksi' => $this->tanggal_transaksi,
-                'jumlah_pembelian'  => $this->jumlah_pembelian,
-                'total'             => $this->total,
-            ]);
-
-            // 3) update jurnal umum header
-            $j = JurnalUmum::where('no_bukti', 'PBJ-'.$t->id)->firstOrFail();
-            $j->update([
-                'tanggal'    => $this->tanggal_transaksi,
-                'keterangan' => "Pembelian {$t->barang->nama_barang}",
-            ]);
-
-            // 4) hapus detail lama & buat ulang
-            $j->detailJurnal()->delete();
-
-            $akunPersediaan = Akun::where('kode_akun', '1.1.01')->firstOrFail();
-            DetailJurnal::create([
-                'jurnal_umum_id' => $j->id,
-                'akun_id'        => $akunPersediaan->id,
-                'debit'          => $this->total,
-                'kredit'         => 0,
-            ]);
-
-            $akunHutang = Akun::where('kode_akun', '2.1.01')->firstOrFail();
-            DetailJurnal::create([
-                'jurnal_umum_id' => $j->id,
-                'akun_id'        => $akunHutang->id,
-                'debit'          => 0,
-                'kredit'         => $this->total,
-            ]);
-        });
-
-        // reset & refresh
-        $this->reset([
-            'transaksiId','id_barang','tanggal_transaksi',
-            'jumlah_pembelian','total','harga_beli'
+        // 2) Update transaksi pembelian
+        $t->update([
+            'id_barang'         => $this->id_barang,
+            'tanggal_transaksi' => $this->tanggal_transaksi,
+            'jumlah_pembelian'  => $this->jumlah_pembelian,
+            'total'             => $this->total,
         ]);
-        $this->dispatch('refreshDatatable');
-        $this->open = false;
-    }
+
+        // 3) Update jurnal umum (hapus entri lama & buat baru)
+        $noBukti = 'PBJ-' . $t->id;
+        JurnalUmum::where('no_bukti', $noBukti)->delete();
+
+        JurnalUmum::create([
+            'id_akun'    => 105, // akun persediaan
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => $this->total,
+            'kredit'     => 0,
+            'keterangan' => "Pembelian {$t->barang->nama_barang}",
+        ]);
+
+        JurnalUmum::create([
+            'id_akun'    => 101, // akun kas
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => 0,
+            'kredit'     => $this->total,
+            'keterangan' => "Pembayaran pembelian {$t->barang->nama_barang}",
+        ]);
+    });
+
+    $this->reset([
+        'transaksiId','id_barang','tanggal_transaksi',
+        'jumlah_pembelian','total','harga_beli'
+    ]);
+
+    $this->dispatch('refreshDatatable');
+    $this->open = false;
+}
+
 
     public function render()
     {

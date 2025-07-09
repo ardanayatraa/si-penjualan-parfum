@@ -5,86 +5,59 @@ namespace App\Livewire\JurnalUmum;
 use Livewire\Component;
 use App\Models\JurnalUmum;
 use App\Models\Akun;
-use App\Models\DetailJurnal;
-use Illuminate\Support\Facades\DB;
 
 class Update extends Component
 {
     public $open = false;
     public $jurnal_id;
-    public $tanggal, $no_bukti, $keterangan;
-    public $details = [];
+    public $tanggal, $id_akun, $debit, $kredit, $keterangan;
 
-    protected $listeners = ['edit' => 'loadData'];
+    protected $listeners = ['editJurnal' => 'loadData'];
 
     protected function rules()
     {
         return [
-            'tanggal'              => 'required|date',
-            'no_bukti'             => 'required|string|max:100',
-            'keterangan'           => 'nullable|string|max:255',
-            'details.*.akun_id'    => 'required|exists:akun,id',
-            'details.*.debit'      => 'required|numeric|min:0',
-            'details.*.kredit'     => 'required|numeric|min:0',
+            'tanggal'    => 'required|date',
+            'id_akun'    => 'required|exists:akun,id_akun',
+            'debit'      => 'nullable|numeric|min:0',
+            'kredit'     => 'nullable|numeric|min:0',
+            'keterangan' => 'nullable|string|max:100',
         ];
     }
 
     public function loadData($id)
     {
-        $j = JurnalUmum::with('detailJurnal')->findOrFail($id);
-        $this->jurnal_id  = $j->id;
-        $this->tanggal    = $j->tanggal->format('Y-m-d');
-        $this->no_bukti   = $j->no_bukti;
+        $j = JurnalUmum::findOrFail($id);
+        $this->jurnal_id  = $j->id_jurnal;
+        $this->tanggal    = $j->tanggal;
+        $this->id_akun    = $j->id_akun;
+        $this->debit      = $j->debit;
+        $this->kredit     = $j->kredit;
         $this->keterangan = $j->keterangan;
-        $this->details    = $j->detailJurnal->map(fn($d) => [
-            'akun_id' => $d->akun_id,
-            'debit'   => $d->debit,
-            'kredit'  => $d->kredit,
-        ])->toArray();
-        $this->open = true;
-    }
-
-    public function addDetail()
-    {
-        $this->details[] = ['akun_id' => null, 'debit' => 0, 'kredit' => 0];
-    }
-
-    public function removeDetail($i)
-    {
-        unset($this->details[$i]);
-        $this->details = array_values($this->details);
+        $this->open       = true;
     }
 
     public function update()
     {
         $this->validate();
 
-        DB::transaction(function() {
-            JurnalUmum::where('id', $this->jurnal_id)->update([
-                'tanggal'    => $this->tanggal,
-                'no_bukti'   => $this->no_bukti,
-                'keterangan' => $this->keterangan,
-            ]);
-            DetailJurnal::where('jurnal_umum_id', $this->jurnal_id)->delete();
-            foreach ($this->details as $row) {
-                DetailJurnal::create([
-                    'jurnal_umum_id' => $this->jurnal_id,
-                    'akun_id'        => $row['akun_id'],
-                    'debit'          => $row['debit'],
-                    'kredit'         => $row['kredit'],
-                ]);
-            }
-        });
+        JurnalUmum::where('id_jurnal', $this->jurnal_id)->update([
+            'tanggal'    => $this->tanggal,
+            'id_akun'    => $this->id_akun,
+            'debit'      => $this->debit ?? 0,
+            'kredit'     => $this->kredit ?? 0,
+            'keterangan' => $this->keterangan,
+        ]);
 
-        $this->reset(['tanggal','no_bukti','keterangan','details','jurnal_id']);
-        $this->open = false;
+        $this->reset(['jurnal_id', 'tanggal', 'id_akun', 'debit', 'kredit', 'keterangan']);
         $this->dispatch('refreshDatatable');
+        $this->open = false;
     }
 
     public function render()
     {
         return view('livewire.jurnal-umum.update', [
-            'listAkun' => Akun::all()
+            'listAkun' => Akun::all(),
         ]);
     }
 }

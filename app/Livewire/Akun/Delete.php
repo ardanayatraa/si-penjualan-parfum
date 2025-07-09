@@ -10,7 +10,7 @@ class Delete extends Component
     public $open = false;
     public $id_akun;
 
-    protected $listeners = ['delete' => 'confirmDelete'];
+    protected $listeners = ['deleteAkun' => 'confirmDelete'];
 
     public function confirmDelete($id)
     {
@@ -20,7 +20,7 @@ class Delete extends Component
 
     public function delete()
     {
-        Akun::where('id', $this->id_akun)->delete();
+        Akun::where('id_akun', $this->id_akun)->delete();
 
         $this->reset();
         $this->dispatch('refreshDatatable');

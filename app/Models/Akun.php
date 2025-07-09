@@ -10,26 +10,24 @@ class Akun extends Model
     use HasFactory;
 
     protected $table = 'akun';
+    protected $primaryKey = 'id_akun';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
         'kode_akun',
         'nama_akun',
         'tipe_akun',
-        'parent_id',
+        'kategori_akun',
+        'saldo_awal',
     ];
 
-    public function parent()
+    /**
+     * Relasi ke model Pengeluaran
+     * Satu akun bisa punya banyak pengeluaran
+     */
+    public function pengeluarans()
     {
-        return $this->belongsTo(Akun::class, 'parent_id');
-    }
-
-    public function children()
-    {
-        return $this->hasMany(Akun::class, 'parent_id');
-    }
-
-    public function detailJurnal()
-    {
-        return $this->hasMany(DetailJurnal::class, 'akun_id');
+        return $this->hasMany(Pengeluaran::class, 'akun_id', 'id_akun');
     }
 }

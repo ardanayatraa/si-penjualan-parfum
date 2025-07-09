@@ -10,7 +10,7 @@ class Delete extends Component
     public $open = false;
     public $jurnal_id;
 
-    protected $listeners = ['delete' => 'confirmDelete'];
+    protected $listeners = ['deleteJurnal' => 'confirmDelete'];
 
     public function confirmDelete($id)
     {
@@ -20,7 +20,7 @@ class Delete extends Component
 
     public function delete()
     {
-        JurnalUmum::where('id', $this->jurnal_id)->delete();
+        JurnalUmum::where('id_jurnal', $this->jurnal_id)->delete();
         $this->reset();
         $this->dispatch('refreshDatatable');
         $this->open = false;

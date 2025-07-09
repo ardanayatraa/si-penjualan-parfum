@@ -4,7 +4,9 @@ namespace App\Livewire\Table;
 
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
+use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
 use App\Models\Barang;
+use App\Models\Supplier;
 
 class BarangTable extends DataTableComponent
 {
@@ -18,6 +20,19 @@ class BarangTable extends DataTableComponent
             'default' => true,
             'class'   => $index % 2 === 0 ? 'bg-gray-200' : '',
         ]);
+    }
+
+    public function filters(): array
+    {
+        return [
+            SelectFilter::make('Supplier')
+                ->options(
+                    Supplier::orderBy('nama_supplier')->pluck('nama_supplier', 'id_supplier')->toArray()
+                )
+                ->filter(function ($builder, string $value) {
+                    $builder->where('id_supplier', $value);
+                }),
+        ];
     }
 
     public function columns(): array

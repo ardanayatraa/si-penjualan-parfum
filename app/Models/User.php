@@ -18,4 +18,9 @@ class User extends Authenticatable
         'no_telp',
         'alamat',
     ];
+
+    public function pengeluarans()
+    {
+        return $this->hasMany(\App\Models\Pengeluaran::class, 'id_user', 'id');
+    }
 }

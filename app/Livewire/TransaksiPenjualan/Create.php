@@ -93,6 +93,7 @@ class Create extends Component
         }
 
         DB::transaction(function () use ($barang) {
+
             $barang->decrement('stok', $this->jumlah_penjualan);
 
             $harga_jual_total = $this->harga_jual * $this->jumlah_penjualan;
@@ -103,44 +104,38 @@ class Create extends Component
                 'jumlah_penjualan' => $this->jumlah_penjualan,
                 'tanggal_transaksi'=> $this->tanggal_transaksi,
                 'id_pajak'         => $this->id_pajak,
-                'harga_pokok'      => $barang->harga_jual,
-                'subtotal'       => $harga_jual_total,
+                'harga_pokok'      => $barang->harga_beli,
+                'subtotal'         => $harga_jual_total,
                 'total_harga'      => $this->total_harga,
             ]);
 
-            $j = JurnalUmum::create([
-                'tanggal'    => $this->tanggal_transaksi,
-                'no_bukti'   => 'PNJ-'.$t->id,
-                'keterangan' => "Penjualan {$barang->nama_barang}",
-            ]);
+            // Ambil ID akun penjualan dan kas (contoh kasar, bisa dari pengaturan)
+            $akun_penjualan = Akun::where('nama_akun', 'Penjualan Barang')->first();
+            $akun_kas       = Akun::where('nama_akun', 'Kas')->first();
 
-            $akunKas = Akun::where('kode_akun', '1.1.01')->firstOrFail();
-            DetailJurnal::create([
-                'jurnal_umum_id' => $j->id,
-                'akun_id'        => $akunKas->id,
-                'debit'          => $this->total_harga,
-                'kredit'         => 0,
-            ]);
-
-            $akunPenjualan = Akun::where('kode_akun', '4.1.01')->firstOrFail();
-            DetailJurnal::create([
-                'jurnal_umum_id' => $j->id,
-                'akun_id'        => $akunPenjualan->id,
-                'debit'          => 0,
-                'kredit'         => $harga_jual_total,
-            ]);
-
-            $pajakAmt = $this->total_harga - $harga_jual_total;
-            if ($pajakAmt > 0) {
-                $akunPpn = Akun::where('kode_akun', '2.1.02')->firstOrFail();
-                DetailJurnal::create([
-                    'jurnal_umum_id' => $j->id,
-                    'akun_id'        => $akunPpn->id,
-                    'debit'          => 0,
-                    'kredit'         => $pajakAmt,
-                ]);
+            if (! $akun_penjualan || ! $akun_kas) {
+                throw new \Exception('Akun kas atau penjualan belum tersedia.');
             }
+
+            // Entri debit: Kas bertambah
+            JurnalUmum::create([
+                'id_akun'    => $akun_kas->id_akun,
+                'tanggal'    => $this->tanggal_transaksi,
+                'debit'      => $this->total_harga,
+                'kredit'     => 0,
+                'keterangan' => 'Penerimaan dari penjualan barang ID ' . $t->id,
+            ]);
+
+            // Entri kredit: Pendapatan (penjualan) bertambah
+            JurnalUmum::create([
+                'id_akun'    => $akun_penjualan->id_akun,
+                'tanggal'    => $this->tanggal_transaksi,
+                'debit'      => 0,
+                'kredit'     => $this->total_harga,
+                'keterangan' => 'Penjualan barang ID ' . $t->id,
+            ]);
         });
+
 
         $this->reset([
             'id_barang', 'jumlah_penjualan', 'tanggal_transaksi',

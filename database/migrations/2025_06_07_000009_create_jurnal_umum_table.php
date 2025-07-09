@@ -9,11 +9,14 @@ class CreateJurnalUmumTable extends Migration
     public function up()
     {
         Schema::create('jurnal_umum', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->bigIncrements('id_jurnal');
+            $table->unsignedBigInteger('id_akun');
             $table->date('tanggal');
-            $table->string('no_bukti', 30)->unique();
-            $table->string('keterangan', 255);
+            $table->decimal('debit', 15, 2)->default(0);
+            $table->decimal('kredit', 15, 2)->default(0);
+            $table->string('keterangan', 100)->nullable();
             $table->timestamps();
+
         });
     }
 
