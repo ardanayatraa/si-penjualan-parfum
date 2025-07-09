@@ -144,7 +144,7 @@
                                 </a>
 
                                 <a href="{{ route('grafik-penjualan.index') }}"
-                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('grafik.penjualan') ? 'sidebar-active' : '' }}">
+                                    class="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-orange-200 transition-all {{ request()->routeIs('grafik-penjualan.index') ? 'sidebar-active' : '' }}">
                                     <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
                                     <span>Grafik Penjualan</span>
                                 </a>
