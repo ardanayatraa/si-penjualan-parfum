@@ -24,7 +24,11 @@ class PiutangTable extends DataTableComponent
                 ->html()
                 ->format(fn($value) => '<strong>' . $value . '</strong>'),
 
-            Column::make('ID Penjualan', 'id_penjualan')
+            Column::make('Nama Barang', 'penjualan.barang.nama_barang')
+                ->sortable(),
+            Column::make('Harga Barang', 'penjualan.barang.harga_jual')
+                ->sortable(),
+            Column::make('Tanggal Transaksi', 'penjualan.tanggal_transaksi')
                 ->sortable(),
 
             Column::make('Nama Pelanggan', 'nama_pelanggan')
