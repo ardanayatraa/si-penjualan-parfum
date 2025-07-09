@@ -69,7 +69,7 @@
                 <tr>
                     <td>{{ $r['kode'] }}</td>
                     <td>{{ $r['nama'] }}</td>
-                    <td class="right">{{ $r['debet'] > 0 ? 'Rp ' . number_format($r['debet'], 0, ',', '.') : '-' }}</td>
+                    <td class="right">{{ $r['debit'] > 0 ? 'Rp ' . number_format($r['debit'], 0, ',', '.') : '-' }}</td>
                     <td class="right">{{ $r['kredit'] > 0 ? 'Rp ' . number_format($r['kredit'], 0, ',', '.') : '-' }}
                     </td>
                 </tr>

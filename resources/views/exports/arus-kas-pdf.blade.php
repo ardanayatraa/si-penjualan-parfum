@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Arus Kas</title>
     <style>
+        @page {
+            size: A4 landscape;
+            margin: 20mm;
+        }
+
         * {
             margin: 0;
             padding: 0;

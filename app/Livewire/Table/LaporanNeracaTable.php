@@ -194,22 +194,26 @@ class LaporanNeracaTable extends DataTableComponent
         $totalAset = $aset->sum('saldo_akhir');
         $totalKewajiban = $kewajiban->sum('saldo_akhir');
         $totalEkuitas = $ekuitas->sum('saldo_akhir');
-
+$totalDebet = $list->sum('debit');
+$totalKredit = $list->sum('kredit');
         // Format dates
         $start = $this->startDate ? Carbon::parse($this->startDate)->format('d M Y') : 'Awal';
         $end = $this->endDate ? Carbon::parse($this->endDate)->format('d M Y') : 'Sekarang';
 
-        $pdf = Pdf::loadView('exports.neraca-pdf', [
-            'aset' => $aset,
-            'kewajiban' => $kewajiban,
-            'ekuitas' => $ekuitas,
-            'totalAset' => $totalAset,
-            'totalKewajiban' => $totalKewajiban,
-            'totalEkuitas' => $totalEkuitas,
-            'start' => $start,
-            'end' => $end,
-            'exportType' => $type,
-        ])->setPaper('a4', 'portrait');
+ $pdf = Pdf::loadView('exports.neraca-pdf', [
+    'aset' => $aset,
+    'kewajiban' => $kewajiban,
+    'ekuitas' => $ekuitas,
+    'totalAset' => $totalAset,
+    'totalKewajiban' => $totalKewajiban,
+    'totalEkuitas' => $totalEkuitas,
+    'totalDebet' => $totalDebet,     // ✅ tambahkan ini
+    'totalKredit' => $totalKredit,   // ✅ dan ini
+    'start' => $start,
+    'end' => $end,
+    'exportType' => $type,
+    'list' => $list,
+]);
 
         $this->clearSelected();
 

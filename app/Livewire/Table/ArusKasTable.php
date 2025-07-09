@@ -42,7 +42,7 @@ public function exportPdf()
         'startDate' => Carbon::parse($this->startDate)->format('d M Y'),
         'endDate' => Carbon::parse($this->endDate)->format('d M Y'),
     ])
-    ->setPaper('a4', 'portrait')
+    ->setPaper('a4', 'landscape')
     ->setOptions([
         'isHtml5ParserEnabled' => true,
         'isPhpEnabled' => true,
