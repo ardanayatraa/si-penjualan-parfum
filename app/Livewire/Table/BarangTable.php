@@ -55,10 +55,10 @@ class BarangTable extends DataTableComponent
                 ->filter(function (Builder $builder, string $value) {
                     switch ($value) {
                         case 'in_stock':
-                            $builder->where('stok', '>', 10);
+                            $builder->where('stok', '>', 0);
                             break;
                         case 'low_stock':
-                            $builder->where('stok', '>', 0)->where('stok', '<=', 10);
+                            $builder->where('stok', '>', 0)->where('stok', '<=', 5);
                             break;
                         case 'out_of_stock':
                             $builder->where('stok', 0);
