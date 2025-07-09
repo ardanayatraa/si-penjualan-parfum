@@ -181,7 +181,7 @@
         </div>
     </div>
 
-    @if ($pendapatanData->isEmpty() && $bebanData->isEmpty() && $pendapatanPenjualan == 0)
+    @if ($pendapatanData->isEmpty() && $bebanData->isEmpty() && $totalPendapatan == 0)
         <div class="no-data">
             <p>Tidak ada data untuk periode yang dipilih.</p>
         </div>
@@ -192,14 +192,6 @@
                 <td colspan="3">PENDAPATAN</td>
             </tr>
 
-            @if ($pendapatanPenjualan > 0)
-                <tr class="account-row">
-                    <td class="account-code">4001</td>
-                    <td class="account-name">Pendapatan Penjualan</td>
-                    <td class="account-amount">Rp {{ number_format($pendapatanPenjualan, 0, ',', '.') }}</td>
-                </tr>
-            @endif
-
             @foreach ($pendapatanData as $item)
                 @if ($item['jumlah'] > 0)
                     <tr class="account-row">
@@ -209,6 +201,24 @@
                     </tr>
                 @endif
             @endforeach
+
+            @if (isset($pendapatanTransaksiLangsung))
+                @foreach ($pendapatanTransaksiLangsung as $item)
+                    <tr class="account-row">
+                        <td class="account-code">{{ $item['kode'] }}</td>
+                        <td class="account-name">{{ $item['nama'] }}</td>
+                        <td class="account-amount">Rp {{ number_format($item['jumlah'], 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            @endif
+
+            @if (
+                $pendapatanData->where('jumlah', '>', 0)->isEmpty() &&
+                    (!isset($pendapatanTransaksiLangsung) || $pendapatanTransaksiLangsung->isEmpty()))
+                <tr class="account-row">
+                    <td colspan="3" class="no-data">Tidak ada data pendapatan untuk periode ini</td>
+                </tr>
+            @endif
 
             <tr class="subtotal-row">
                 <td colspan="2">TOTAL PENDAPATAN</td>
@@ -222,22 +232,6 @@
                 <td colspan="3">BEBAN</td>
             </tr>
 
-            @if ($hpp > 0)
-                <tr class="account-row">
-                    <td class="account-code">5001</td>
-                    <td class="account-name">Harga Pokok Penjualan</td>
-                    <td class="account-amount">Rp {{ number_format($hpp, 0, ',', '.') }}</td>
-                </tr>
-            @endif
-
-            @if ($pengeluaranOperasional > 0)
-                <tr class="account-row">
-                    <td class="account-code">5002</td>
-                    <td class="account-name">Beban Operasional</td>
-                    <td class="account-amount">Rp {{ number_format($pengeluaranOperasional, 0, ',', '.') }}</td>
-                </tr>
-            @endif
-
             @foreach ($bebanData as $item)
                 @if ($item['jumlah'] > 0)
                     <tr class="account-row">
@@ -247,6 +241,24 @@
                     </tr>
                 @endif
             @endforeach
+
+            @if (isset($bebanTransaksiLangsung))
+                @foreach ($bebanTransaksiLangsung as $item)
+                    <tr class="account-row">
+                        <td class="account-code">{{ $item['kode'] }}</td>
+                        <td class="account-name">{{ $item['nama'] }}</td>
+                        <td class="account-amount">Rp {{ number_format($item['jumlah'], 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            @endif
+
+            @if (
+                $bebanData->where('jumlah', '>', 0)->isEmpty() &&
+                    (!isset($bebanTransaksiLangsung) || $bebanTransaksiLangsung->isEmpty()))
+                <tr class="account-row">
+                    <td colspan="3" class="no-data">Tidak ada data beban untuk periode ini</td>
+                </tr>
+            @endif
 
             <tr class="subtotal-row">
                 <td colspan="2">TOTAL BEBAN</td>
@@ -294,6 +306,29 @@
                 </span>
             </div>
         </div>
+
+        <!-- DETAIL BREAKDOWN (Opsional) -->
+        @if (!empty($rawStartDate) && !empty($rawEndDate))
+            <div class="summary-section" style="margin-top: 20px;">
+                <h3>Detail Periode</h3>
+                <div class="summary-item">
+                    <span>Tanggal Mulai:</span>
+                    <span>{{ $rawStartDate ?: 'Awal Tahun' }}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Tanggal Selesai:</span>
+                    <span>{{ $rawEndDate ?: 'Hari Ini' }}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Jumlah Akun Pendapatan:</span>
+                    <span>{{ $pendapatanData->where('jumlah', '>', 0)->count() }} akun</span>
+                </div>
+                <div class="summary-item">
+                    <span>Jumlah Akun Beban:</span>
+                    <span>{{ $bebanData->where('jumlah', '>', 0)->count() }} akun</span>
+                </div>
+            </div>
+        @endif
 
         <!-- TANDA TANGAN -->
         <div class="signature-section">

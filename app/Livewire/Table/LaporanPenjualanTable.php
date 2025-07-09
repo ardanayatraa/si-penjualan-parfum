@@ -250,30 +250,10 @@ class LaporanPenjualanTable extends DataTableComponent
                     return 'Rp ' . number_format($hpp, 0, ',', '.');
                 }),
 
-            Column::make('Laba Bruto', 'laba_bruto') // New field
-                ->sortable()
-                ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
-
             Column::make('Pembayaran', 'metode_pembayaran') // New field
-                ->label(function($row) {
-                    $methods = [
-                        'cash' => 'Tunai',
-                        'transfer' => 'Transfer',
-                        'debit_card' => 'Kartu Debit',
-                        'credit_card' => 'Kartu Kredit',
-                        'e_wallet' => 'E-Wallet',
-                    ];
-                    return $methods[$row->metode_pembayaran] ?? $row->metode_pembayaran;
-                }),
+               ,
 
-            Column::make('Margin (%)', 'id')
-                ->label(function($row) {
-                    if ($row->subtotal > 0) {
-                        $margin = ($row->laba_bruto / $row->subtotal) * 100;
-                        return number_format($margin, 1) . '%';
-                    }
-                    return '0%';
-                }),
+
         ];
     }
 }

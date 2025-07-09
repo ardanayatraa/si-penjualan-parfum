@@ -146,28 +146,7 @@ class LaporanStokTable extends DataTableComponent
                 ->label(fn($row) => 'Rp ' . number_format($row->nilai_penjualan ?? 0, 0, ',', '.'))
                 ->sortable(),
 
-            Column::make('Turnover', 'id')
-                ->label(function($row) {
-                    $totalPembelian = $row->qty_pembelian ?? 0;
-                    $totalPenjualan = $row->qty_penjualan ?? 0;
 
-                    if ($totalPembelian > 0) {
-                        $turnover = ($totalPenjualan / $totalPembelian) * 100;
-                        return number_format($turnover, 1) . '%';
-                    }
-                    return '0%';
-                }),
-
-            Column::make('Margin', 'id')
-                ->label(function($row) {
-                    if ($row->harga_beli > 0) {
-                        $margin = (($row->harga_jual - $row->harga_beli) / $row->harga_beli) * 100;
-                        $color = $margin > 0 ? 'text-green-600' : 'text-red-600';
-                        return '<span class="' . $color . '">' . number_format($margin, 1) . '%</span>';
-                    }
-                    return '0%';
-                })
-                ->html(),
         ];
     }
 

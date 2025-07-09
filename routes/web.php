@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BarangController;
+use App\Http\Controllers\GrafikPenjualanController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransaksiPembelianController;
@@ -76,9 +77,18 @@ Route::middleware([
 
     Route::get('/laporan/cetak', [LaporanController::class, 'print'])->name('laporan.print');
 
-    Route::get('/grafik-penjualan', [\App\Http\Controllers\GrafikPenjualanController::class, 'index'])->name('grafik.penjualan');
-    Route::get('/grafik-penjualan/profit', [\App\Http\Controllers\GrafikPenjualanController::class, 'grafikProfit']);
-    Route::get('/grafik-penjualan/produk-terlaris', [\App\Http\Controllers\GrafikPenjualanController::class, 'grafikProdukTerlaris']);
+    // Route group untuk grafik penjualan
+Route::prefix('grafik-penjualan')->name('grafik-penjualan.')->group(function () {
+    // Halaman utama
+    Route::get('/', [GrafikPenjualanController::class, 'index'])->name('index');
+    Route::get('/profit', [GrafikPenjualanController::class, 'grafikProfit'])->name('profit');
+    Route::get('/produk-terlaris', [GrafikPenjualanController::class, 'grafikProdukTerlaris'])->name('produk-terlaris');
+    Route::get('/summary', [GrafikPenjualanController::class, 'getSummary'])->name('summary');
+    Route::get('/top-products', [GrafikPenjualanController::class, 'getTopProducts'])->name('top-products');
+
+    // Export
+    Route::get('/export', [GrafikPenjualanController::class, 'export'])->name('export');
+});
 
     Route::get('/pengeluaran', function () {
         return view('page.pengeluaran');

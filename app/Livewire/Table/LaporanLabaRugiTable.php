@@ -13,11 +13,13 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LaporanLabaRugiTable extends DataTableComponent
 {
     public string $startDate = '';
-    public string $endDate   = '';
+    public string $endDate = '';
 
     protected $model = Akun::class;
 
@@ -26,15 +28,14 @@ class LaporanLabaRugiTable extends DataTableComponent
         $this->setPrimaryKey('id_akun');
         $this->setDefaultSort('kode_akun', 'asc');
         $this->setTableRowUrl(function($row) {
-            return null; // Disable row clicks
+            return null;
         });
     }
 
     public function builder(): Builder
     {
-        // Hanya ambil akun Pendapatan dan Beban
         return Akun::query()
-            ->whereIn('tipe_akun', ['Pendapatan', 'Beban'])
+            ->whereIn('tipe_akun', ['pendapatan', 'beban']) // lowercase sesuai seeder
             ->orderBy('kode_akun', 'asc');
     }
 
@@ -45,14 +46,14 @@ class LaporanLabaRugiTable extends DataTableComponent
                 ->config(['max' => now()->format('Y-m-d')])
                 ->filter(function (Builder $builder, string $value) {
                     $this->startDate = $value;
-                    return $builder; // Filter tidak diterapkan di builder karena kita hitung manual
+                    return $builder;
                 }),
 
             DateFilter::make('Sampai Tanggal')
                 ->config(['max' => now()->format('Y-m-d')])
                 ->filter(function (Builder $builder, string $value) {
                     $this->endDate = $value;
-                    return $builder; // Filter tidak diterapkan di builder karena kita hitung manual
+                    return $builder;
                 }),
         ];
     }
@@ -60,9 +61,8 @@ class LaporanLabaRugiTable extends DataTableComponent
     public function columns(): array
     {
         return [
-            Column::make('ID', 'id_akun')
-                ->sortable()
-                ,
+            Column::make('ID', 'id_akun')->sortable(),
+
             Column::make('Kode Akun', 'kode_akun')
                 ->sortable()
                 ->searchable(),
@@ -74,71 +74,166 @@ class LaporanLabaRugiTable extends DataTableComponent
             Column::make('Tipe Akun', 'tipe_akun')
                 ->sortable(),
 
-            Column::make('Saldo', 'id_akun')
-               ,
+            Column::make('Saldo')
+                ->label(
+                    fn($row, Column $column) => $this->getSaldoValue($row, $column)
+                ),
         ];
     }
 
     /**
-     * Hitung saldo akun berdasarkan periode yang dipilih
+     * Method untuk menghitung dan menampilkan saldo
      */
-    private function calculateAccountBalance(Akun $akun): float
+    private function getSaldoValue($row, Column $column): string
     {
-        $startDate = $this->startDate ?: '1900-01-01';
-        $endDate = $this->endDate ?: now()->format('Y-m-d');
+        $saldo = $this->calculateSaldo($row);
 
-        // Saldo dari jurnal umum
-        $jurnalQuery = JurnalUmum::where('id_akun', $akun->id_akun)
-            ->whereBetween('tanggal', [$startDate, $endDate]);
+        // Format currency
+        return 'Rp ' . number_format($saldo, 0, ',', '.');
+    }
 
-        $totalDebit = $jurnalQuery->sum('debit');
-        $totalKredit = $jurnalQuery->sum('kredit');
+    /**
+     * Method utama untuk menghitung saldo - pendekatan sederhana
+     */
+    private function calculateSaldo(Akun $akun): float
+    {
+        $startDate = $this->getStartDate();
+        $endDate = $this->getEndDate();
 
-        // Untuk akun Pendapatan: saldo = kredit - debit
-        // Untuk akun Beban: saldo = debit - kredit
-        if ($akun->tipe_akun === 'Pendapatan') {
+        // Coba dari jurnal dulu
+        $saldoJurnal = $this->hitungDariJurnal($akun, $startDate, $endDate);
+
+        // Jika saldo jurnal = 0, coba dari transaksi
+        if ($saldoJurnal == 0) {
+            $saldoTransaksi = $this->hitungDariTransaksi($akun, $startDate, $endDate);
+            return $saldoTransaksi;
+        }
+
+        return $saldoJurnal;
+    }
+
+    /**
+     * Hitung saldo dari tabel jurnal_umum
+     */
+    private function hitungDariJurnal(Akun $akun, string $startDate, string $endDate): float
+    {
+        // Ambil total debit dan kredit
+        $totalDebit = JurnalUmum::where('id_akun', $akun->id_akun)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->sum('debit');
+
+        $totalKredit = JurnalUmum::where('id_akun', $akun->id_akun)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->sum('kredit');
+
+        // Hitung saldo berdasarkan tipe akun (sesuai seeder: lowercase)
+        if ($akun->tipe_akun === 'pendapatan') {
             return $totalKredit - $totalDebit;
-        } else {
+        } else { // beban
             return $totalDebit - $totalKredit;
         }
     }
 
     /**
-     * Hitung pendapatan dari penjualan
+     * Hitung saldo dari tabel transaksi (backup jika jurnal kosong)
      */
-    private function calculateRevenue(): float
+    private function hitungDariTransaksi(Akun $akun, string $startDate, string $endDate): float
     {
-        $startDate = $this->startDate ?: '1900-01-01';
-        $endDate = $this->endDate ?: now()->format('Y-m-d');
+        $namaAkun = strtolower($akun->nama_akun);
 
-        return TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+        if ($akun->tipe_akun === 'Pendapatan') {
+            // Untuk akun pendapatan
+            if (str_contains($namaAkun, 'penjualan') || str_contains($namaAkun, 'pendapatan')) {
+                return TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+                    ->where('status', 'selesai')
+                    ->sum('total_harga');
+            }
+        } else {
+            // Untuk akun beban
+            if (str_contains($namaAkun, 'hpp') || str_contains($namaAkun, 'pokok')) {
+                return TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+                    ->where('status', 'selesai')
+                    ->sum('harga_pokok');
+            }
+
+            if (str_contains($namaAkun, 'operasional') || str_contains($namaAkun, 'beban')) {
+                return Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
+                    ->sum('jumlah');
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get start date dengan default
+     */
+    private function getStartDate(): string
+    {
+        return $this->startDate ?: Carbon::now()->startOfYear()->format('Y-m-d');
+    }
+
+    /**
+     * Get end date dengan default
+     */
+    private function getEndDate(): string
+    {
+        return $this->endDate ?: Carbon::now()->format('Y-m-d');
+    }
+
+    /**
+     * Hitung total pendapatan untuk summary
+     */
+    public function getTotalPendapatan(): float
+    {
+        $startDate = $this->getStartDate();
+        $endDate = $this->getEndDate();
+
+        // Dari jurnal
+        $pendapatanJurnal = JurnalUmum::join('akun', 'jurnal_umum.id_akun', '=', 'akun.id_akun')
+            ->where('akun.tipe_akun', 'Pendapatan')
+            ->whereBetween('jurnal_umum.tanggal', [$startDate, $endDate])
+            ->sum(DB::raw('jurnal_umum.kredit - jurnal_umum.debit'));
+
+        // Dari transaksi (backup)
+        $pendapatanTransaksi = TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
             ->where('status', 'selesai')
             ->sum('total_harga');
+
+        return max($pendapatanJurnal, $pendapatanTransaksi);
     }
 
     /**
-     * Hitung total pengeluaran
+     * Hitung total beban untuk summary
      */
-    private function calculateExpenses(): float
+    public function getTotalBeban(): float
     {
-        $startDate = $this->startDate ?: '1900-01-01';
-        $endDate = $this->endDate ?: now()->format('Y-m-d');
+        $startDate = $this->getStartDate();
+        $endDate = $this->getEndDate();
 
-        return Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
-            ->sum('jumlah');
-    }
+        // Dari jurnal
+        $bebanJurnal = JurnalUmum::join('akun', 'jurnal_umum.id_akun', '=', 'akun.id_akun')
+            ->where('akun.tipe_akun', 'Beban')
+            ->whereBetween('jurnal_umum.tanggal', [$startDate, $endDate])
+            ->sum(DB::raw('jurnal_umum.debit - jurnal_umum.kredit'));
 
-    /**
-     * Hitung HPP (Harga Pokok Penjualan)
-     */
-    private function calculateCOGS(): float
-    {
-        $startDate = $this->startDate ?: '1900-01-01';
-        $endDate = $this->endDate ?: now()->format('Y-m-d');
-
-        return TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+        // Dari transaksi (backup)
+        $hpp = TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
             ->where('status', 'selesai')
             ->sum('harga_pokok');
+
+        $operasional = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
+            ->sum('jumlah');
+
+        return max($bebanJurnal, $hpp + $operasional);
+    }
+
+    /**
+     * Hitung laba rugi
+     */
+    public function getLabaRugi(): float
+    {
+        return $this->getTotalPendapatan() - $this->getTotalBeban();
     }
 
     public function bulkActions(): array
@@ -159,7 +254,7 @@ class LaporanLabaRugiTable extends DataTableComponent
         }
 
         $akuns = Akun::whereIn('id_akun', $selected)
-            ->whereIn('tipe_akun', ['Pendapatan', 'Beban'])
+            ->whereIn('tipe_akun', ['pendapatan', 'beban']) // lowercase
             ->orderBy('kode_akun')
             ->get();
 
@@ -168,7 +263,7 @@ class LaporanLabaRugiTable extends DataTableComponent
 
     public function exportAllPdf()
     {
-        $akuns = Akun::whereIn('tipe_akun', ['Pendapatan', 'Beban'])
+        $akuns = Akun::whereIn('tipe_akun', ['pendapatan', 'beban']) // lowercase
             ->orderBy('kode_akun')
             ->get();
 
@@ -178,15 +273,15 @@ class LaporanLabaRugiTable extends DataTableComponent
     private function generatePdf(Collection $akuns, string $type = 'all')
     {
         // Kelompokkan akun berdasarkan tipe
-        $pendapatanAkuns = $akuns->where('tipe_akun', 'Pendapatan');
-        $bebanAkuns = $akuns->where('tipe_akun', 'Beban');
+        $pendapatanAkuns = $akuns->where('tipe_akun', 'pendapatan'); // lowercase
+        $bebanAkuns = $akuns->where('tipe_akun', 'beban'); // lowercase
 
         // Hitung data untuk laporan
         $pendapatanData = $pendapatanAkuns->map(function($akun) {
             return [
                 'kode' => $akun->kode_akun,
                 'nama' => $akun->nama_akun,
-                'jumlah' => $this->calculateAccountBalance($akun),
+                'jumlah' => $this->calculateSaldo($akun),
             ];
         });
 
@@ -194,37 +289,55 @@ class LaporanLabaRugiTable extends DataTableComponent
             return [
                 'kode' => $akun->kode_akun,
                 'nama' => $akun->nama_akun,
-                'jumlah' => $this->calculateAccountBalance($akun),
+                'jumlah' => $this->calculateSaldo($akun),
             ];
         });
 
-        // Hitung total dan laba rugi
-        $totalPendapatan = $pendapatanData->sum('jumlah');
-        $totalBeban = $bebanData->sum('jumlah');
+        // Hitung total KONSISTEN dengan data yang ditampilkan
+        $totalPendapatanFromData = $pendapatanData->sum('jumlah');
+        $totalBebanFromData = $bebanData->sum('jumlah');
 
-        // Tambahkan pendapatan dari penjualan langsung
-        $pendapatanPenjualan = $this->calculateRevenue();
+        // Jika tidak ada data di akun, coba ambil dari transaksi langsung
+        $totalPendapatanFromTransaksi = $this->getTotalPendapatan();
+        $totalBebanFromTransaksi = $this->getTotalBeban();
 
-        // Tambahkan HPP dan pengeluaran operasional
-        $hpp = $this->calculateCOGS();
-        $pengeluaranOperasional = $this->calculateExpenses();
+        // Gunakan yang lebih besar (prioritas ke data akun)
+        $totalPendapatan = $totalPendapatanFromData > 0 ? $totalPendapatanFromData : $totalPendapatanFromTransaksi;
+        $totalBeban = $totalBebanFromData > 0 ? $totalBebanFromData : $totalBebanFromTransaksi;
 
-        $totalPendapatanBersih = $totalPendapatan + $pendapatanPenjualan;
-        $totalBebanBersih = $totalBeban + $hpp + $pengeluaranOperasional;
-        $labaRugi = $totalPendapatanBersih - $totalBebanBersih;
+        $labaRugi = $totalPendapatan - $totalBeban;
+
+        // Tambahkan data transaksi langsung jika akun kosong
+        $pendapatanTransaksiLangsung = [];
+        $bebanTransaksiLangsung = [];
+
+        if ($totalPendapatanFromData == 0 && $totalPendapatanFromTransaksi > 0) {
+            $pendapatanTransaksiLangsung[] = [
+                'kode' => '4001',
+                'nama' => 'Pendapatan dari Transaksi',
+                'jumlah' => $totalPendapatanFromTransaksi,
+            ];
+        }
+
+        if ($totalBebanFromData == 0 && $totalBebanFromTransaksi > 0) {
+            $bebanTransaksiLangsung[] = [
+                'kode' => '5001',
+                'nama' => 'Beban dari Transaksi',
+                'jumlah' => $totalBebanFromTransaksi,
+            ];
+        }
 
         // Format tanggal
-        $startDate = $this->startDate ? Carbon::parse($this->startDate)->format('d M Y') : 'Awal';
-        $endDate = $this->endDate ? Carbon::parse($this->endDate)->format('d M Y') : 'Sekarang';
+        $startDate = $this->startDate ? Carbon::parse($this->startDate)->format('d M Y') : 'Awal Tahun';
+        $endDate = $this->endDate ? Carbon::parse($this->endDate)->format('d M Y') : 'Hari Ini';
 
         $pdf = Pdf::loadView('exports.laba-rugi-pdf', [
             'pendapatanData' => $pendapatanData,
             'bebanData' => $bebanData,
-            'pendapatanPenjualan' => $pendapatanPenjualan,
-            'hpp' => $hpp,
-            'pengeluaranOperasional' => $pengeluaranOperasional,
-            'totalPendapatan' => $totalPendapatanBersih,
-            'totalBeban' => $totalBebanBersih,
+            'pendapatanTransaksiLangsung' => collect($pendapatanTransaksiLangsung),
+            'bebanTransaksiLangsung' => collect($bebanTransaksiLangsung),
+            'totalPendapatan' => $totalPendapatan,
+            'totalBeban' => $totalBeban,
             'labaRugi' => $labaRugi,
             'startDate' => $startDate,
             'endDate' => $endDate,

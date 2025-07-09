@@ -44,16 +44,6 @@
 
     <!-- Action Buttons -->
     <div class="no-print mb-4 flex gap-2">
-        <button onclick="window.print()"
-            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a1 1 0 001-1v-4a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 001 1zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
-                </path>
-            </svg>
-            Cetak Laporan
-        </button>
-
         <button wire:click="exportPdf"
             class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,17 +61,17 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal Mulai</label>
-                <input type="date" wire:model="startDate"
+                <input type="date" wire:model.live="startDate"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tanggal Akhir</label>
-                <input type="date" wire:model="endDate"
+                <input type="date" wire:model.live="endDate"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih Akun</label>
-                <select wire:model="selectedAkun"
+                <select wire:model.live="selectedAkun"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="all">Semua Akun</option>
                     @foreach ($akunList as $akun)

@@ -3,12 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Buku Besar</title>
     <style>
         @page {
             size: A4 landscape;
-            margin: 20mm;
+            margin: 15mm;
         }
 
         * {
@@ -27,23 +26,22 @@
 
         .container {
             width: 100%;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 15px;
+            padding: 10px;
         }
 
         /* Header */
         .header {
             text-align: center;
             border-bottom: 2px solid #000;
-            padding-bottom: 15px;
+            padding-bottom: 12px;
             margin-bottom: 20px;
+            page-break-inside: avoid;
         }
 
         .header h1 {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -51,34 +49,38 @@
         .header .period {
             font-size: 11px;
             color: #666;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
         }
 
         .header .account-filter {
             font-size: 10px;
             color: #888;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
         }
 
-        .header .print-date {
+        .header .print-info {
             font-size: 8px;
             color: #888;
         }
 
         /* Account Section */
         .account-section {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             page-break-inside: avoid;
         }
 
         .account-header {
-            background-color: #f0f0f0;
+            background-color: #f0f8ff;
             border: 2px solid #000;
-            padding: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            display: table;
+            width: 100%;
+        }
+
+        .account-info {
+            display: table-cell;
+            vertical-align: middle;
         }
 
         .account-info h3 {
@@ -93,7 +95,9 @@
         }
 
         .account-balance {
+            display: table-cell;
             text-align: right;
+            vertical-align: middle;
         }
 
         .account-balance .label {
@@ -106,6 +110,7 @@
             font-weight: bold;
         }
 
+        /* Colors */
         .positive {
             color: #2d7a2d;
         }
@@ -114,11 +119,15 @@
             color: #c53030;
         }
 
+        .currency {
+            font-family: 'DejaVu Sans Mono', monospace;
+        }
+
         /* Table */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         th,
@@ -126,7 +135,7 @@
             border: 1px solid #333;
             padding: 4px 6px;
             text-align: left;
-            vertical-align: top;
+            vertical-align: middle;
         }
 
         th {
@@ -134,10 +143,13 @@
             font-weight: bold;
             font-size: 8px;
             text-transform: uppercase;
+            page-break-inside: avoid;
+            page-break-after: avoid;
         }
 
         td {
             font-size: 9px;
+            page-break-inside: avoid;
         }
 
         .text-right {
@@ -148,13 +160,13 @@
             text-align: center;
         }
 
-        /* Column widths */
+        /* Column widths for landscape */
         .col-date {
-            width: 12%;
+            width: 10%;
         }
 
         .col-desc {
-            width: 40%;
+            width: 45%;
         }
 
         .col-debit {
@@ -166,26 +178,32 @@
         }
 
         .col-balance {
-            width: 18%;
+            width: 15%;
         }
 
-        /* Footer totals */
+        /* Table rows */
+        .data-row:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
         .total-row {
-            background-color: #f8f8f8;
+            background-color: #e6f3ff;
             font-weight: bold;
             border-top: 2px solid #000;
+            page-break-inside: avoid;
         }
 
         /* Summary boxes */
         .summary-boxes {
-            display: flex;
-            justify-content: space-between;
+            display: table;
+            width: 100%;
             margin-top: 10px;
-            gap: 10px;
+            border-spacing: 5px;
         }
 
         .summary-box {
-            flex: 1;
+            display: table-cell;
+            width: 25%;
             border: 1px solid #ccc;
             padding: 6px;
             text-align: center;
@@ -195,7 +213,7 @@
         .summary-box .label {
             font-size: 8px;
             color: #666;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
 
         .summary-box .value {
@@ -203,49 +221,100 @@
             font-weight: bold;
         }
 
-        /* No data message */
+        /* No data */
         .no-data {
             text-align: center;
-            padding: 20px;
+            padding: 15px;
             font-style: italic;
             color: #666;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
         }
 
-        /* Footer */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            border-top: 1px solid #ccc;
-            padding: 8px 15px;
-            font-size: 7px;
-            color: #666;
-            background: white;
-        }
-
-        .footer-left {
-            float: left;
-        }
-
-        .footer-right {
-            float: right;
-        }
-
-        /* Page break */
+        /* Page break utilities */
         .page-break {
             page-break-before: always;
         }
 
-        /* Currency formatting */
-        .currency {
-            font-family: 'DejaVu Sans Mono', monospace;
+        .no-page-break {
+            page-break-inside: avoid;
         }
 
-        /* Empty row for spacing */
-        .empty-row {
-            height: 20px;
+        /* Overall summary */
+        .overall-summary {
+            margin-top: 20px;
+            padding: 12px;
+            border: 2px solid #000;
+            background-color: #f8f9fa;
+            page-break-inside: avoid;
+        }
+
+        .overall-summary h3 {
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .summary-stats {
+            display: table;
+            width: 100%;
+            border-spacing: 8px;
+        }
+
+        .stat-item {
+            display: table-cell;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+
+        .stat-label {
+            font-size: 8px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Footer */
+        .footer-notes {
+            margin-top: 15px;
+            font-size: 8px;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            page-break-inside: avoid;
+        }
+
+        .footer-notes ul {
+            margin-left: 15px;
+            margin-top: 5px;
+        }
+
+        .footer-notes li {
+            margin-bottom: 3px;
+            line-height: 1.4;
+        }
+
+        /* Print optimization */
+        @media print {
+            .account-section {
+                page-break-inside: avoid;
+            }
+
+            .account-header {
+                page-break-after: avoid;
+            }
+
+            .total-row {
+                page-break-before: avoid;
+            }
         }
     </style>
 </head>
@@ -264,28 +333,30 @@
                         $selectedAccount = $akunList->find($selectedAkun);
                     @endphp
                     @if ($selectedAccount)
-                        Akun: {{ $selectedAccount->kode_akun }} - {{ $selectedAccount->nama_akun }}
+                        Filter Akun: {{ $selectedAccount->kode_akun }} - {{ $selectedAccount->nama_akun }}
                     @endif
                 </div>
             @endif
-            <div class="print-date">
-                Dicetak pada: {{ now()->format('d/m/Y H:i:s') }}
+            <div class="print-info">
+                Dicetak pada: {{ now()->format('d/m/Y H:i:s') }} |
+                Total Akun: {{ count($data) }}
             </div>
         </div>
 
         @if (count($data) > 0)
             @foreach ($data as $akunId => $akunData)
-                <div class="account-section">
+                <div class="account-section no-page-break">
                     <!-- Account Header -->
                     <div class="account-header">
                         <div class="account-info">
                             <h3>{{ $akunData['akun']->kode_akun }} - {{ $akunData['akun']->nama_akun }}</h3>
-                            <div class="account-type">{{ $akunData['akun']->tipe_akun }} |
-                                {{ $akunData['akun']->kategori_akun }}</div>
+                            <div class="account-type">
+                                {{ ucfirst($akunData['akun']->tipe_akun) }} | {{ $akunData['akun']->kategori_akun }}
+                            </div>
                         </div>
                         <div class="account-balance">
                             <div class="label">Saldo Awal:</div>
-                            <div class="amount {{ $akunData['saldo_awal'] >= 0 ? 'positive' : 'negative' }}">
+                            <div class="amount currency {{ $akunData['saldo_awal'] >= 0 ? 'positive' : 'negative' }}">
                                 Rp {{ number_format($akunData['saldo_awal'], 0, ',', '.') }}
                             </div>
                         </div>
@@ -310,16 +381,17 @@
                                 @endphp
                                 @foreach ($akunData['transaksi'] as $transaksi)
                                     @php
-                                        // Hitung saldo berjalan
-                                        if (in_array($tipeAkun, ['Aset', 'Beban'])) {
+                                        // Hitung saldo berjalan berdasarkan tipe akun (sesuai seeder)
+                                        if (in_array($tipeAkun, ['aset', 'beban'])) {
                                             $runningSaldo += $transaksi->debit - $transaksi->kredit;
                                         } else {
                                             $runningSaldo += $transaksi->kredit - $transaksi->debit;
                                         }
                                     @endphp
-                                    <tr>
+                                    <tr class="data-row">
                                         <td class="col-date">
-                                            {{ \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y') }}</td>
+                                            {{ \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y') }}
+                                        </td>
                                         <td class="col-desc">{{ $transaksi->keterangan }}</td>
                                         <td class="col-debit text-right currency">
                                             @if ($transaksi->debit > 0)
@@ -363,71 +435,96 @@
                         <div class="summary-boxes">
                             <div class="summary-box">
                                 <div class="label">Saldo Awal</div>
-                                <div class="value">{{ number_format($akunData['saldo_awal'], 0, ',', '.') }}</div>
+                                <div class="value currency">{{ number_format($akunData['saldo_awal'], 0, ',', '.') }}
+                                </div>
                             </div>
                             <div class="summary-box">
                                 <div class="label">Total Debit</div>
-                                <div class="value positive">{{ number_format($akunData['total_debit'], 0, ',', '.') }}
-                                </div>
+                                <div class="value currency positive">
+                                    {{ number_format($akunData['total_debit'], 0, ',', '.') }}</div>
                             </div>
                             <div class="summary-box">
                                 <div class="label">Total Kredit</div>
-                                <div class="value negative">{{ number_format($akunData['total_kredit'], 0, ',', '.') }}
-                                </div>
+                                <div class="value currency negative">
+                                    {{ number_format($akunData['total_kredit'], 0, ',', '.') }}</div>
                             </div>
                             <div class="summary-box">
                                 <div class="label">Saldo Akhir</div>
-                                <div class="value {{ $akunData['saldo_akhir'] >= 0 ? 'positive' : 'negative' }}">
+                                <div
+                                    class="value currency {{ $akunData['saldo_akhir'] >= 0 ? 'positive' : 'negative' }}">
                                     {{ number_format($akunData['saldo_akhir'], 0, ',', '.') }}
                                 </div>
                             </div>
                         </div>
                     @else
                         <div class="no-data">
-                            Tidak ada transaksi dalam periode ini
+                            Tidak ada transaksi dalam periode {{ $startDate }} - {{ $endDate }}
                         </div>
                     @endif
                 </div>
 
-                @if (!$loop->last)
-                    <div class="empty-row"></div>
+                @if (!$loop->last && count($akunData['transaksi']) > 10)
+                    <div class="page-break"></div>
                 @endif
             @endforeach
+
+            <!-- Overall Summary -->
+            @php
+                $totalDebitKeseluruhan = collect($data)->sum('total_debit');
+                $totalKreditKeseluruhan = collect($data)->sum('total_kredit');
+                $jumlahTransaksi = collect($data)->sum(fn($item) => count($item['transaksi']));
+                $jumlahAkunAktif = collect($data)->filter(fn($item) => count($item['transaksi']) > 0)->count();
+            @endphp
+
+            <div class="overall-summary">
+                <h3>Ringkasan Keseluruhan</h3>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Debit</div>
+                        <div class="stat-value currency positive">Rp
+                            {{ number_format($totalDebitKeseluruhan, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Kredit</div>
+                        <div class="stat-value currency negative">Rp
+                            {{ number_format($totalKreditKeseluruhan, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Akun Aktif</div>
+                        <div class="stat-value">{{ $jumlahAkunAktif }} dari {{ count($data) }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Transaksi</div>
+                        <div class="stat-value">{{ $jumlahTransaksi }}</div>
+                    </div>
+                </div>
+            </div>
         @else
             <div class="no-data">
                 <p><strong>Tidak ada data transaksi yang ditemukan</strong></p>
+                <p>Periode: {{ $startDate }} - {{ $endDate }}</p>
+                @if ($selectedAkun !== 'all')
+                    <p>Filter akun: {{ $akunList->find($selectedAkun)->nama_akun ?? 'Tidak ditemukan' }}</p>
+                @endif
                 <p>Silakan periksa filter periode dan akun yang dipilih</p>
             </div>
         @endif
 
-        <!-- Summary Info -->
-        <div style="margin-top: 30px; font-size: 8px; color: #666; border-top: 1px solid #ccc; padding-top: 10px;">
-            <p><strong>Catatan:</strong></p>
-            <ul style="margin-left: 15px; margin-top: 5px;">
-                <li>Laporan ini menunjukkan detail transaksi untuk setiap akun dalam periode yang dipilih</li>
-                <li>Saldo dihitung berdasarkan saldo awal ditambah/dikurangi transaksi debit dan kredit</li>
-                <li>Akun Aset dan Beban memiliki saldo normal debit, akun Liabilitas, Ekuitas, dan Pendapatan memiliki
-                    saldo normal kredit</li>
-                <li>Saldo berjalan menunjukkan posisi saldo setelah setiap transaksi</li>
+        <!-- Footer Notes -->
+        <div class="footer-notes">
+            <p><strong>Catatan Penting:</strong></p>
+            <ul>
+                <li>Laporan ini menampilkan detail transaksi buku besar untuk periode {{ $startDate }} sampai
+                    {{ $endDate }}</li>
+                <li>Saldo awal dihitung berdasarkan saldo akun ditambah mutasi sebelum periode laporan</li>
+                <li>Akun Aset dan Beban menggunakan saldo normal debit (bertambah di debit, berkurang di kredit)</li>
+                <li>Akun Kewajiban dan Pendapatan menggunakan saldo normal kredit (bertambah di kredit, berkurang di
+                    debit)</li>
+                <li>Saldo berjalan menunjukkan posisi saldo setelah setiap transaksi secara kronologis</li>
+                <li>Total debit dan kredit harus seimbang sesuai prinsip akuntansi double entry</li>
             </ul>
         </div>
     </div>
-
-    <!-- Footer -->
-    <div class="footer">
-        <div class="footer-left">
-            Laporan Buku Besar - {{ now()->format('d/m/Y H:i:s') }}
-        </div>
-        <div class="footer-right">
-            Halaman <span class="pageNumber"></span>
-        </div>
-    </div>
-
-    <!-- Page numbering script -->
-    <script>
-        // This would work in a real browser environment
-        // For DomPDF, page numbers need to be handled differently
-    </script>
 </body>
 
 </html>
