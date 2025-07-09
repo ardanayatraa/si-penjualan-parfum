@@ -14,15 +14,21 @@ class CreateTransaksiPenjualanTable extends Migration
             $table->unsignedBigInteger('id_barang');
             $table->unsignedBigInteger('id_pajak');
             $table->dateTime('tanggal_transaksi');
+            $table->integer('jumlah_terjual'); // Sesuai skema database
             $table->decimal('subtotal', 15, 2);
             $table->decimal('harga_pokok', 15, 2);
+            $table->decimal('laba_bruto', 15, 2); // Field yang kurang
             $table->decimal('total_harga', 15, 2);
-            $table->integer('jumlah_penjualan');
+            $table->string('metode_pembayaran', 20); // Field yang kurang
+            $table->string('status', 20)->default('pending'); // Field yang kurang
             $table->timestamps();
 
-            $table->foreign('id_kasir')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreign('id_barang')->references('id')->on('barang')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreign('id_pajak')->references('id')->on('pajak_transaksi')->onDelete('restrict')->onUpdate('cascade');
+            // Indexes untuk performa
+            $table->index('tanggal_transaksi');
+            $table->index('status');
+            $table->index(['id_kasir', 'tanggal_transaksi']);
+
+
         });
     }
 

@@ -7,7 +7,6 @@ use App\Models\TransaksiPenjualan;
 use App\Models\Barang;
 use App\Models\PajakTransaksi;
 use App\Models\JurnalUmum;
-use App\Models\DetailJurnal;
 use App\Models\Akun;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,48 +16,86 @@ class Create extends Component
 {
     public $open = false;
 
+    // Form fields
     public $id_barang;
-    public $jumlah_penjualan = 1;
+    public $jumlah_terjual = 1; // Sesuai dengan field di model
     public $tanggal_transaksi;
     public $id_pajak;
+    public $metode_pembayaran = 'cash';
+    public $status = 'pending';
 
+    // Calculated fields
     public $harga_jual = 0;
+    public $harga_pokok = 0;
+    public $subtotal = 0;
+    public $pajak_amount = 0;
     public $total_harga = 0;
+    public $laba_bruto = 0;
+
+    // Available options
+    public $metodePembayaranOptions = [
+        'cash' => 'Tunai',
+        'transfer' => 'Transfer Bank',
+        'debit_card' => 'Kartu Debit',
+        'credit_card' => 'Kartu Kredit',
+        'e_wallet' => 'E-Wallet',
+    ];
 
     protected $rules = [
-        'id_barang'        => 'required|exists:barang,id',
-        'jumlah_penjualan' => 'required|integer|min:1',
-        'tanggal_transaksi'=> 'required|date',
+        'id_barang'          => 'required|exists:barang,id',
+        'jumlah_terjual'     => 'required|integer|min:1',
+        'tanggal_transaksi'  => 'required|date',
+        'metode_pembayaran'  => 'required|in:cash,transfer,debit_card,credit_card,e_wallet',
+        'status'             => 'required|in:pending,selesai,dibatalkan',
+    ];
+
+    protected $messages = [
+        'id_barang.required'         => 'Barang harus dipilih.',
+        'id_barang.exists'           => 'Barang tidak valid.',
+        'jumlah_terjual.required'    => 'Jumlah penjualan harus diisi.',
+        'jumlah_terjual.min'         => 'Jumlah penjualan minimal 1.',
+        'tanggal_transaksi.required' => 'Tanggal transaksi harus diisi.',
+        'metode_pembayaran.required' => 'Metode pembayaran harus dipilih.',
     ];
 
     public function mount()
     {
         $this->tanggal_transaksi = Carbon::now()->toDateString();
-        $this->id_pajak = PajakTransaksi::find(1)?->id ?? null;
+        $this->id_pajak = PajakTransaksi::first()?->id ?? null;
     }
 
     public function updatedIdBarang($value)
     {
-        $b = Barang::find($value);
-        if ($b) {
-            $this->harga_jual = $b->harga_jual;
-            if ($this->jumlah_penjualan > $b->stok) {
-                $this->jumlah_penjualan = $b->stok;
+        $barang = Barang::find($value);
+        if ($barang) {
+            $this->harga_jual = $barang->harga_jual;
+            $this->harga_pokok = $barang->harga_beli;
+
+            // Validasi stok
+            if ($this->jumlah_terjual > $barang->stok) {
+                $this->jumlah_terjual = $barang->stok;
+                if ($barang->stok == 0) {
+                    $this->addError('id_barang', 'Barang ini stoknya habis.');
+                } else {
+                    $this->addError('jumlah_terjual', "Stok hanya tersedia {$barang->stok} unit.");
+                }
             }
         } else {
-            $this->harga_jual = 0;
+            $this->reset(['harga_jual', 'harga_pokok']);
         }
         $this->recalculate();
     }
 
-    public function updatedJumlahPenjualan($value)
+    public function updatedJumlahTerjual($value)
     {
-        $b = Barang::find($this->id_barang);
-        if ($b && $value > $b->stok) {
-            $this->addError('jumlah_penjualan', "Jumlah penjualan tidak boleh melebihi stok ({$b->stok}).");
-            $this->jumlah_penjualan = $b->stok;
-        } else {
-            $this->resetErrorBag('jumlah_penjualan');
+        $barang = Barang::find($this->id_barang);
+        if ($barang) {
+            if ($value > $barang->stok) {
+                $this->addError('jumlah_terjual', "Jumlah penjualan tidak boleh melebihi stok ({$barang->stok}).");
+                $this->jumlah_terjual = $barang->stok;
+            } else {
+                $this->resetErrorBag('jumlah_terjual');
+            }
         }
         $this->recalculate();
     }
@@ -70,11 +107,33 @@ class Create extends Component
 
     private function recalculate()
     {
-        $subtotal = $this->harga_jual * $this->jumlah_penjualan;
-        if ($p = PajakTransaksi::find($this->id_pajak)) {
-            $this->total_harga = round($subtotal * (1 + $p->presentase / 100), 2);
+        if (!$this->harga_jual || !$this->jumlah_terjual) {
+            $this->reset(['subtotal', 'pajak_amount', 'total_harga', 'laba_bruto']);
+            return;
+        }
+
+        // Hitung subtotal
+        $this->subtotal = $this->harga_jual * $this->jumlah_terjual;
+
+        // Hitung pajak
+        if ($pajak = PajakTransaksi::find($this->id_pajak)) {
+
+
+            $this->pajak_amount = round(($this->subtotal * $pajak->presentase) / 100, 2);
+
         } else {
-            $this->total_harga = $subtotal;
+            $this->pajak_amount = 0;
+        }
+
+        // Hitung total harga
+        $this->total_harga = $this->subtotal + $this->pajak_amount;
+
+
+
+        // Hitung laba bruto
+        if ($this->harga_pokok) {
+            $total_hpp = $this->harga_pokok * $this->jumlah_terjual;
+            $this->laba_bruto = $this->subtotal - $total_hpp;
         }
     }
 
@@ -83,74 +142,142 @@ class Create extends Component
         $this->validate();
 
         $barang = Barang::find($this->id_barang);
-        if (! $barang) {
+        if (!$barang) {
             $this->addError('id_barang', 'Barang tidak ditemukan.');
             return;
         }
-        if ($this->jumlah_penjualan > $barang->stok) {
-            $this->addError('jumlah_penjualan', "Jumlah melebihi stok ({$barang->stok}).");
+
+        if ($this->jumlah_terjual > $barang->stok) {
+            $this->addError('jumlah_terjual', "Jumlah melebihi stok tersedia ({$barang->stok}).");
             return;
         }
 
-        DB::transaction(function () use ($barang) {
+        try {
+            DB::transaction(function () use ($barang) {
+                // Create transaksi penjualan
+                $transaksi = TransaksiPenjualan::create([
+                    'id_kasir'           => Auth::id(),
+                    'id_barang'          => $this->id_barang,
+                    'id_pajak'           => $this->id_pajak,
+                    'tanggal_transaksi'  => $this->tanggal_transaksi,
+                    'jumlah_terjual'     => $this->jumlah_terjual,
+                    'subtotal'           => $this->subtotal,
+                    'harga_pokok'        => $this->harga_pokok,
+                    'laba_bruto'         => $this->laba_bruto,
+                    'total_harga'        => $this->total_harga,
+                    'metode_pembayaran'  => $this->metode_pembayaran,
+                    'status'             => $this->status,
+                ]);
 
-            $barang->decrement('stok', $this->jumlah_penjualan);
+                // Jika status selesai, update stok dan buat jurnal
+                if ($this->status === 'selesai') {
+                    $this->processCompletedTransaction($transaksi, $barang);
+                }
+            });
 
-            $harga_jual_total = $this->harga_jual * $this->jumlah_penjualan;
-
-            $t = TransaksiPenjualan::create([
-                'id_kasir'         => Auth::id(),
-                'id_barang'        => $this->id_barang,
-                'jumlah_penjualan' => $this->jumlah_penjualan,
-                'tanggal_transaksi'=> $this->tanggal_transaksi,
-                'id_pajak'         => $this->id_pajak,
-                'harga_pokok'      => $barang->harga_beli,
-                'subtotal'         => $harga_jual_total,
-                'total_harga'      => $this->total_harga,
+            $this->resetForm();
+            $this->dispatch('refreshDatatable');
+            $this->dispatch('show-toast', [
+                'type' => 'success',
+                'message' => 'Transaksi penjualan berhasil disimpan!'
             ]);
+            $this->open = false;
 
-            // Ambil ID akun penjualan dan kas (contoh kasar, bisa dari pengaturan)
-            $akun_penjualan = Akun::where('nama_akun', 'Penjualan Barang')->first();
-            $akun_kas       = Akun::where('nama_akun', 'Kas')->first();
+        } catch (\Exception $e) {
+            $this->addError('general', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
 
-            if (! $akun_penjualan || ! $akun_kas) {
-                throw new \Exception('Akun kas atau penjualan belum tersedia.');
-            }
+    private function processCompletedTransaction($transaksi, $barang)
+    {
+        // Update stok barang
+        $barang->decrement('stok', $this->jumlah_terjual);
 
-            // Entri debit: Kas bertambah
-            JurnalUmum::create([
-                'id_akun'    => $akun_kas->id_akun,
-                'tanggal'    => $this->tanggal_transaksi,
-                'debit'      => $this->total_harga,
-                'kredit'     => 0,
-                'keterangan' => 'Penerimaan dari penjualan barang ID ' . $t->id,
-            ]);
+        // Buat jurnal umum
+        $this->createJournalEntries($transaksi);
+    }
 
-            // Entri kredit: Pendapatan (penjualan) bertambah
-            JurnalUmum::create([
-                'id_akun'    => $akun_penjualan->id_akun,
-                'tanggal'    => $this->tanggal_transaksi,
-                'debit'      => 0,
-                'kredit'     => $this->total_harga,
-                'keterangan' => 'Penjualan barang ID ' . $t->id,
-            ]);
-        });
+    private function createJournalEntries($transaksi)
+    {
+        // Cari akun yang diperlukan
+        $akunKas = Akun::where('tipe_akun', 'Aset')
+                      ->where('nama_akun', 'LIKE', '%kas%')
+                      ->first();
 
+        $akunPenjualan = Akun::where('tipe_akun', 'Pendapatan')
+                            ->where('nama_akun', 'LIKE', '%penjualan%')
+                            ->first();
 
-        $this->reset([
-            'id_barang', 'jumlah_penjualan', 'tanggal_transaksi',
-            'id_pajak', 'harga_jual', 'total_harga',
+        if (!$akunKas || !$akunPenjualan) {
+            throw new \Exception('Akun Kas atau Penjualan belum dikonfigurasi. Silakan hubungi administrator.');
+        }
+
+        $keterangan = "Penjualan {$transaksi->barang->nama_barang} - Transaksi #{$transaksi->id}";
+
+        // Jurnal: Debit Kas (Aset bertambah)
+        JurnalUmum::create([
+            'id_akun'    => $akunKas->id_akun,
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => $this->total_harga,
+            'kredit'     => 0,
+            'keterangan' => $keterangan,
         ]);
 
-        $this->dispatch('refreshDatatable');
+        // Jurnal: Kredit Penjualan (Pendapatan bertambah)
+        JurnalUmum::create([
+            'id_akun'    => $akunPenjualan->id_akun,
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => 0,
+            'kredit'     => $this->total_harga,
+            'keterangan' => $keterangan,
+        ]);
+    }
+
+    public function setStatusSelesai()
+    {
+        $this->status = 'selesai';
+    }
+
+    public function setStatusPending()
+    {
+        $this->status = 'pending';
+    }
+
+    private function resetForm()
+    {
+        $this->reset([
+            'id_barang',
+            'jumlah_terjual',
+            'harga_jual',
+            'harga_pokok',
+            'subtotal',
+            'pajak_amount',
+            'total_harga',
+            'laba_bruto'
+        ]);
+
+        $this->jumlah_terjual = 1;
+        $this->metode_pembayaran = 'cash';
+        $this->status = 'pending';
+        $this->tanggal_transaksi = Carbon::now()->toDateString();
+    }
+
+    public function closeModal()
+    {
+        $this->resetForm();
+        $this->resetErrorBag();
         $this->open = false;
     }
 
     public function render()
     {
         return view('livewire.transaksi-penjualan.create', [
-            'listBarang' => Barang::all(),
-            'listPajak'  => PajakTransaksi::all(),
+            'listBarang' => Barang::where('stok', '>', 0)
+                                 ->orderBy('nama_barang')
+                                 ->get(),
+            'listPajak' => PajakTransaksi::orderBy('presentase')
+                                        ->get(),
+            'selectedBarang' => $this->id_barang ? Barang::find($this->id_barang) : null,
         ]);
     }
 }

@@ -3,32 +3,39 @@
 namespace App\Livewire\Table;
 
 use App\Models\Akun;
+use App\Models\JurnalUmum;
+use App\Models\TransaksiPenjualan;
+use App\Models\Pengeluaran;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
-use Rappasoft\LaravelLivewireTables\Views\Columns\SumColumn;
+use Illuminate\Support\Collection;
 
 class LaporanLabaRugiTable extends DataTableComponent
 {
     public string $startDate = '';
     public string $endDate   = '';
 
-    // Hanya ambil akun Pendapatan & Beban
     protected $model = Akun::class;
 
     public function configure(): void
     {
-        $this->setPrimaryKey('kode_akun');
+        $this->setPrimaryKey('id_akun');
         $this->setDefaultSort('kode_akun', 'asc');
+        $this->setTableRowUrl(function($row) {
+            return null; // Disable row clicks
+        });
     }
 
     public function builder(): Builder
     {
+        // Hanya ambil akun Pendapatan dan Beban
         return Akun::query()
-            ->whereIn('tipe_akun', ['Pendapatan','Beban']);
+            ->whereIn('tipe_akun', ['Pendapatan', 'Beban'])
+            ->orderBy('kode_akun', 'asc');
     }
 
     public function filters(): array
@@ -36,90 +43,208 @@ class LaporanLabaRugiTable extends DataTableComponent
         return [
             DateFilter::make('Dari Tanggal')
                 ->config(['max' => now()->format('Y-m-d')])
-                ->filter(fn(Builder $b, string $v) => $this->startDate = $v),
+                ->filter(function (Builder $builder, string $value) {
+                    $this->startDate = $value;
+                    return $builder; // Filter tidak diterapkan di builder karena kita hitung manual
+                }),
 
             DateFilter::make('Sampai Tanggal')
                 ->config(['max' => now()->format('Y-m-d')])
-                ->filter(fn(Builder $b, string $v) => $this->endDate = $v),
+                ->filter(function (Builder $builder, string $value) {
+                    $this->endDate = $value;
+                    return $builder; // Filter tidak diterapkan di builder karena kita hitung manual
+                }),
         ];
     }
 
     public function columns(): array
     {
         return [
-            Column::make('No Akun', 'kode_akun')->sortable(),
-            Column::make('Nama Akun', 'nama_akun')->sortable(),
-            SumColumn::make('Debit')
-            ->setDataSource('detailJurnal','debit')
-            ->sortable(),
-            SumColumn::make('Credit')
-            ->setDataSource('detailJurnal','kredit')
-            ->sortable(),
+            Column::make('ID', 'id_akun')
+                ->sortable()
+                ,
+            Column::make('Kode Akun', 'kode_akun')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Nama Akun', 'nama_akun')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Tipe Akun', 'tipe_akun')
+                ->sortable(),
+
+            Column::make('Saldo', 'id_akun')
+                ->format(function($value, $row) {
+                    $saldo = $this->calculateAccountBalance($row);
+                    return $saldo > 0 ? 'Rp ' . number_format($saldo, 0, ',', '.') : 'Rp 0';
+                }),
         ];
     }
 
-    private function sumAccount(Akun $akun): float
+    /**
+     * Hitung saldo akun berdasarkan periode yang dipilih
+     */
+    private function calculateAccountBalance(Akun $akun): float
     {
-        $q = $akun->detailJurnal()->with('jurnalUmum');
-        if ($this->startDate) {
-            $q->whereHas('jurnalUmum', fn($j) =>
-                $j->whereDate('tanggal', '>=', $this->startDate)
-            );
-        }
-        if ($this->endDate) {
-            $q->whereHas('jurnalUmum', fn($j) =>
-                $j->whereDate('tanggal', '<=', $this->endDate)
-            );
-        }
+        $startDate = $this->startDate ?: '1900-01-01';
+        $endDate = $this->endDate ?: now()->format('Y-m-d');
 
-        // Pendapatan: sum kredit; Beban: sum debit
-        return $akun->tipe_akun === 'Pendapatan'
-            ? (float)$q->sum('kredit')
-            : (float)$q->sum('debit');
+        // Saldo dari jurnal umum
+        $jurnalQuery = JurnalUmum::where('id_akun', $akun->id_akun)
+            ->whereBetween('tanggal', [$startDate, $endDate]);
+
+        $totalDebit = $jurnalQuery->sum('debit');
+        $totalKredit = $jurnalQuery->sum('kredit');
+
+        // Untuk akun Pendapatan: saldo = kredit - debit
+        // Untuk akun Beban: saldo = debit - kredit
+        if ($akun->tipe_akun === 'Pendapatan') {
+            return $totalKredit - $totalDebit;
+        } else {
+            return $totalDebit - $totalKredit;
+        }
     }
 
-    private function formatRupiah(float $v): string
+    /**
+     * Hitung pendapatan dari penjualan
+     */
+    private function calculateRevenue(): float
     {
-        return $v > 0
-            ? 'Rp '.number_format($v,0,',','.')
-            : '-';
+        $startDate = $this->startDate ?: '1900-01-01';
+        $endDate = $this->endDate ?: now()->format('Y-m-d');
+
+        return TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->where('status', 'selesai')
+            ->sum('total_harga');
+    }
+
+    /**
+     * Hitung total pengeluaran
+     */
+    private function calculateExpenses(): float
+    {
+        $startDate = $this->startDate ?: '1900-01-01';
+        $endDate = $this->endDate ?: now()->format('Y-m-d');
+
+        return Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
+            ->sum('jumlah');
+    }
+
+    /**
+     * Hitung HPP (Harga Pokok Penjualan)
+     */
+    private function calculateCOGS(): float
+    {
+        $startDate = $this->startDate ?: '1900-01-01';
+        $endDate = $this->endDate ?: now()->format('Y-m-d');
+
+        return TransaksiPenjualan::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->where('status', 'selesai')
+            ->sum('harga_pokok');
     }
 
     public function bulkActions(): array
     {
-        return ['exportPdf' => 'Export PDF'];
+        return [
+            'exportPdf' => 'Export PDF',
+            'exportAllPdf' => 'Export All PDF',
+        ];
     }
 
     public function exportPdf()
     {
         $selected = $this->getSelected();
-        $query = Akun::whereIn('tipe_akun',['Pendapatan','Beban'])
-            ->when($selected, fn($q) => $q->whereIn('kode_akun',$selected))
-            ->orderBy('kode_akun');
 
-        $rows = $query->get()->map(fn($r) => [
-            'kode'  => $r->kode_akun,
-            'nama'  => $r->nama_akun,
-            'tipe'  => $r->tipe_akun,
-            'jumlah'=> $this->sumAccount($r),
-        ]);
+        if (empty($selected)) {
+            $this->addError('export', 'Pilih akun yang akan diekspor terlebih dahulu.');
+            return;
+        }
 
-        $totalPdpt = $rows->filter(fn($r) => $r['tipe']==='Pendapatan')->sum('jumlah');
-        $totalBeban= $rows->filter(fn($r) => $r['tipe']==='Beban')->sum('jumlah');
-        $labaRugi  = $totalPdpt - $totalBeban;
+        $akuns = Akun::whereIn('id_akun', $selected)
+            ->whereIn('tipe_akun', ['Pendapatan', 'Beban'])
+            ->orderBy('kode_akun')
+            ->get();
 
-        $start = $this->startDate ?: '';
-        $end   = $this->endDate   ?: '';
+        return $this->generatePdf($akuns, 'selected');
+    }
 
-        $pdf = Pdf::loadView('exports.laba-rugi-pdf', compact(
-            'rows','totalPdpt','totalBeban','labaRugi','start','end'
-        ))->setPaper('a4','landscape');
+    public function exportAllPdf()
+    {
+        $akuns = Akun::whereIn('tipe_akun', ['Pendapatan', 'Beban'])
+            ->orderBy('kode_akun')
+            ->get();
+
+        return $this->generatePdf($akuns, 'all');
+    }
+
+    private function generatePdf(Collection $akuns, string $type = 'all')
+    {
+        // Kelompokkan akun berdasarkan tipe
+        $pendapatanAkuns = $akuns->where('tipe_akun', 'Pendapatan');
+        $bebanAkuns = $akuns->where('tipe_akun', 'Beban');
+
+        // Hitung data untuk laporan
+        $pendapatanData = $pendapatanAkuns->map(function($akun) {
+            return [
+                'kode' => $akun->kode_akun,
+                'nama' => $akun->nama_akun,
+                'jumlah' => $this->calculateAccountBalance($akun),
+            ];
+        });
+
+        $bebanData = $bebanAkuns->map(function($akun) {
+            return [
+                'kode' => $akun->kode_akun,
+                'nama' => $akun->nama_akun,
+                'jumlah' => $this->calculateAccountBalance($akun),
+            ];
+        });
+
+        // Hitung total dan laba rugi
+        $totalPendapatan = $pendapatanData->sum('jumlah');
+        $totalBeban = $bebanData->sum('jumlah');
+
+        // Tambahkan pendapatan dari penjualan langsung
+        $pendapatanPenjualan = $this->calculateRevenue();
+
+        // Tambahkan HPP dan pengeluaran operasional
+        $hpp = $this->calculateCOGS();
+        $pengeluaranOperasional = $this->calculateExpenses();
+
+        $totalPendapatanBersih = $totalPendapatan + $pendapatanPenjualan;
+        $totalBebanBersih = $totalBeban + $hpp + $pengeluaranOperasional;
+        $labaRugi = $totalPendapatanBersih - $totalBebanBersih;
+
+        // Format tanggal
+        $startDate = $this->startDate ? Carbon::parse($this->startDate)->format('d M Y') : 'Awal';
+        $endDate = $this->endDate ? Carbon::parse($this->endDate)->format('d M Y') : 'Sekarang';
+
+        $pdf = Pdf::loadView('exports.laba-rugi-pdf', [
+            'pendapatanData' => $pendapatanData,
+            'bebanData' => $bebanData,
+            'pendapatanPenjualan' => $pendapatanPenjualan,
+            'hpp' => $hpp,
+            'pengeluaranOperasional' => $pengeluaranOperasional,
+            'totalPendapatan' => $totalPendapatanBersih,
+            'totalBeban' => $totalBebanBersih,
+            'labaRugi' => $labaRugi,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'exportType' => $type,
+            'rawStartDate' => $this->startDate ?: '',
+            'rawEndDate' => $this->endDate ?: '',
+        ])->setPaper('a4', 'portrait');
 
         $this->clearSelected();
 
+        $filename = "laporan-laba-rugi_{$type}_" .
+                   ($this->startDate ?: 'start') . "_" .
+                   ($this->endDate ?: 'end') . ".pdf";
+
         return response()->streamDownload(
             fn() => print($pdf->stream()),
-            "laporan-laba-rugi_{$start}_{$end}.pdf"
+            $filename
         );
     }
 }

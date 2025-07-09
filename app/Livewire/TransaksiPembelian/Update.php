@@ -5,8 +5,8 @@ namespace App\Livewire\TransaksiPembelian;
 use Livewire\Component;
 use App\Models\TransaksiPembelian;
 use App\Models\Barang;
+use App\Models\Supplier;
 use App\Models\JurnalUmum;
-use App\Models\DetailJurnal;
 use App\Models\Akun;
 use Illuminate\Support\Facades\DB;
 
@@ -14,11 +14,28 @@ class Update extends Component
 {
     public $open = false;
     public $transaksiId;
+
+    // Form fields sesuai migration baru
     public $id_barang;
+    public $id_supplier;
     public $tanggal_transaksi;
     public $jumlah_pembelian;
+    public $harga; // Harga per unit
     public $total;
-    public $harga_beli = 0;
+    public $metode_pembayaran = 'cash';
+    public $status = 'pending';
+
+    // Original data untuk tracking perubahan
+    public $originalData = [];
+
+    // Payment method options
+    public $metodePembayaranOptions = [
+        'cash' => 'Tunai',
+        'transfer' => 'Transfer Bank',
+        'credit' => 'Kredit/Hutang',
+        'debit_card' => 'Kartu Debit',
+        'e_wallet' => 'E-Wallet',
+    ];
 
     protected $listeners = ['edit' => 'loadData'];
 
@@ -26,32 +43,62 @@ class Update extends Component
     {
         return [
             'id_barang'         => 'required|exists:barang,id',
+            'id_supplier'       => 'required|exists:supplier,id_supplier',
             'tanggal_transaksi' => 'required|date',
             'jumlah_pembelian'  => 'required|integer|min:1',
+            'harga'             => 'required|numeric|min:0',
+            'metode_pembayaran' => 'required|in:cash,transfer,credit,debit_card,e_wallet',
+            'status'            => 'required|in:pending,selesai,dibatalkan',
         ];
     }
 
+    protected $messages = [
+        'id_barang.required'         => 'Barang harus dipilih.',
+        'id_supplier.required'       => 'Supplier harus dipilih.',
+        'tanggal_transaksi.required' => 'Tanggal transaksi harus diisi.',
+        'jumlah_pembelian.required'  => 'Jumlah pembelian harus diisi.',
+        'jumlah_pembelian.min'       => 'Jumlah pembelian minimal 1.',
+        'harga.required'             => 'Harga harus diisi.',
+        'harga.min'                  => 'Harga tidak boleh negatif.',
+    ];
+
     public function loadData($id)
     {
-        $t = TransaksiPembelian::findOrFail($id);
+        $transaksi = TransaksiPembelian::findOrFail($id);
 
-        $this->transaksiId       = $t->id;
-        $this->id_barang         = $t->id_barang;
-        $this->tanggal_transaksi = $t->tanggal_transaksi->format('Y-m-d');
-        $this->jumlah_pembelian  = $t->jumlah_pembelian;
-        $this->total             = $t->total;
+        // Store original data untuk tracking perubahan
+        $this->originalData = [
+            'id_barang' => $transaksi->id_barang,
+            'jumlah_pembelian' => $transaksi->jumlah_pembelian,
+            'status' => $transaksi->status,
+        ];
 
-        if ($b = Barang::find($this->id_barang)) {
-            $this->harga_beli = $b->harga_beli;
-        }
+        // Load data ke form
+        $this->transaksiId = $transaksi->id;
+        $this->id_barang = $transaksi->id_barang;
+        $this->id_supplier = $transaksi->id_supplier;
+        $this->tanggal_transaksi = $transaksi->tanggal_transaksi->format('Y-m-d');
+        $this->jumlah_pembelian = $transaksi->jumlah_pembelian;
+        $this->harga = $transaksi->harga;
+        $this->total = $transaksi->total;
+        $this->metode_pembayaran = $transaksi->metode_pembayaran;
+        $this->status = $transaksi->status;
 
         $this->open = true;
     }
 
+    public function updatedIdSupplier($supplierId)
+    {
+        // Reset barang selection when supplier changes
+        $this->id_barang = '';
+        $this->harga = 0;
+        $this->recalculate();
+    }
+
     public function updatedIdBarang()
     {
-        if ($b = Barang::find($this->id_barang)) {
-            $this->harga_beli = $b->harga_beli;
+        if ($barang = Barang::find($this->id_barang)) {
+            $this->harga = $barang->harga_beli;
             $this->recalculate();
         }
     }
@@ -61,72 +108,202 @@ class Update extends Component
         $this->recalculate();
     }
 
+    public function updatedHarga()
+    {
+        $this->recalculate();
+    }
+
     private function recalculate()
     {
-        $this->total = $this->harga_beli * $this->jumlah_pembelian;
+        if ($this->harga && $this->jumlah_pembelian) {
+            $this->total = $this->harga * $this->jumlah_pembelian;
+        } else {
+            $this->total = 0;
+        }
     }
 
     public function update()
-{
-    $this->validate();
+    {
+        $this->validate();
 
-    DB::transaction(function() {
-        $t = TransaksiPembelian::findOrFail($this->transaksiId);
-        $oldBarangId = $t->id_barang;
-        $oldJumlah   = $t->jumlah_pembelian;
+        try {
+            DB::transaction(function() {
+                $transaksi = TransaksiPembelian::findOrFail($this->transaksiId);
 
-        // 1) Perbarui stok barang
-        if ($oldBarangId === $this->id_barang) {
-            $selisih = $this->jumlah_pembelian - $oldJumlah;
-            Barang::where('id', $this->id_barang)->increment('stok', $selisih);
-        } else {
-            Barang::where('id', $oldBarangId)->decrement('stok', $oldJumlah);
-            Barang::where('id', $this->id_barang)->increment('stok', $this->jumlah_pembelian);
+                $oldStatus = $this->originalData['status'];
+                $newStatus = $this->status;
+
+                // Handle stock changes
+                $this->handleStockChanges($transaksi);
+
+                // Update transaksi pembelian
+                $transaksi->update([
+                    'id_barang'         => $this->id_barang,
+                    'id_supplier'       => $this->id_supplier,
+                    'tanggal_transaksi' => $this->tanggal_transaksi,
+                    'jumlah_pembelian'  => $this->jumlah_pembelian,
+                    'harga'             => $this->harga,
+                    'total'             => $this->total,
+                    'metode_pembayaran' => $this->metode_pembayaran,
+                    'status'            => $this->status,
+                ]);
+
+                // Handle journal entries based on status change
+                $this->handleJournalEntries($transaksi, $oldStatus, $newStatus);
+            });
+
+            $this->resetForm();
+            $this->dispatch('refreshDatatable');
+            $this->dispatch('show-toast', [
+                'type' => 'success',
+                'message' => 'Transaksi pembelian berhasil diupdate!'
+            ]);
+            $this->open = false;
+
+        } catch (\Exception $e) {
+            $this->addError('general', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    private function handleStockChanges($transaksi)
+    {
+        $oldBarangId = $this->originalData['id_barang'];
+        $oldJumlah = $this->originalData['jumlah_pembelian'];
+        $oldStatus = $this->originalData['status'];
+
+        // Jika transaksi lama statusnya selesai, kembalikan stok
+        if ($oldStatus === 'selesai') {
+            $oldBarang = Barang::find($oldBarangId);
+            if ($oldBarang) {
+                $oldBarang->decrement('stok', $oldJumlah);
+            }
         }
 
-        // 2) Update transaksi pembelian
-        $t->update([
-            'id_barang'         => $this->id_barang,
-            'tanggal_transaksi' => $this->tanggal_transaksi,
-            'jumlah_pembelian'  => $this->jumlah_pembelian,
-            'total'             => $this->total,
-        ]);
+        // Jika transaksi baru statusnya selesai, tambah stok
+        if ($this->status === 'selesai') {
+            $newBarang = Barang::find($this->id_barang);
+            if ($newBarang) {
+                $newBarang->increment('stok', $this->jumlah_pembelian);
+                // Update harga beli barang dengan harga terbaru
+                $newBarang->update(['harga_beli' => $this->harga]);
+            }
+        }
+    }
 
-        // 3) Update jurnal umum (hapus entri lama & buat baru)
-        $noBukti = 'PBJ-' . $t->id;
-        JurnalUmum::where('no_bukti', $noBukti)->delete();
+    private function handleJournalEntries($transaksi, $oldStatus, $newStatus)
+    {
+        // Hapus jurnal lama jika ada
+        if ($oldStatus === 'selesai') {
+            $this->deleteOldJournalEntries($transaksi);
+        }
 
+        // Buat jurnal baru jika status selesai
+        if ($newStatus === 'selesai') {
+            $this->createNewJournalEntries($transaksi);
+        }
+    }
+
+    private function deleteOldJournalEntries($transaksi)
+    {
+        JurnalUmum::where('keterangan', 'LIKE', "%Transaksi #{$transaksi->id}%")->delete();
+    }
+
+    private function createNewJournalEntries($transaksi)
+    {
+        // Cari akun yang diperlukan
+        $akunPersediaan = Akun::where('tipe_akun', 'Aset')
+                             ->where('nama_akun', 'LIKE', '%persediaan%')
+                             ->orWhere('nama_akun', 'LIKE', '%inventory%')
+                             ->first();
+
+        $akunKas = Akun::where('tipe_akun', 'Aset')
+                      ->where('nama_akun', 'LIKE', '%kas%')
+                      ->first();
+
+        $akunHutang = Akun::where('tipe_akun', 'Kewajiban')
+                         ->where('nama_akun', 'LIKE', '%hutang%')
+                         ->first();
+
+        if (!$akunPersediaan) {
+            throw new \Exception('Akun Persediaan belum dikonfigurasi.');
+        }
+
+        $keterangan = "Update Pembelian {$transaksi->barang->nama_barang} - Transaksi #{$transaksi->id}";
+
+        // Jurnal: Debit Persediaan (Aset bertambah)
         JurnalUmum::create([
-            'id_akun'    => 105, // akun persediaan
+            'id_akun'    => $akunPersediaan->id_akun,
             'tanggal'    => $this->tanggal_transaksi,
             'debit'      => $this->total,
             'kredit'     => 0,
-            'keterangan' => "Pembelian {$t->barang->nama_barang}",
+            'keterangan' => $keterangan,
         ]);
 
-        JurnalUmum::create([
-            'id_akun'    => 101, // akun kas
-            'tanggal'    => $this->tanggal_transaksi,
-            'debit'      => 0,
-            'kredit'     => $this->total,
-            'keterangan' => "Pembayaran pembelian {$t->barang->nama_barang}",
+        // Jurnal: Kredit berdasarkan metode pembayaran
+        if ($this->metode_pembayaran === 'credit') {
+            // Kredit Hutang (Kewajiban bertambah)
+            if (!$akunHutang) {
+                throw new \Exception('Akun Hutang belum dikonfigurasi untuk pembayaran kredit.');
+            }
+
+            JurnalUmum::create([
+                'id_akun'    => $akunHutang->id_akun,
+                'tanggal'    => $this->tanggal_transaksi,
+                'debit'      => 0,
+                'kredit'     => $this->total,
+                'keterangan' => $keterangan,
+            ]);
+        } else {
+            // Kredit Kas (Aset berkurang)
+            if (!$akunKas) {
+                throw new \Exception('Akun Kas belum dikonfigurasi.');
+            }
+
+            JurnalUmum::create([
+                'id_akun'    => $akunKas->id_akun,
+                'tanggal'    => $this->tanggal_transaksi,
+                'debit'      => 0,
+                'kredit'     => $this->total,
+                'keterangan' => $keterangan,
+            ]);
+        }
+    }
+
+    public function getListBarangProperty()
+    {
+        if (!$this->id_supplier) {
+            return collect();
+        }
+
+        return Barang::where('id_supplier', $this->id_supplier)
+            ->orderBy('nama_barang')
+            ->get();
+    }
+
+    private function resetForm()
+    {
+        $this->reset([
+            'transaksiId', 'id_barang', 'id_supplier', 'tanggal_transaksi',
+            'jumlah_pembelian', 'harga', 'total', 'originalData'
         ]);
-    });
+        $this->metode_pembayaran = 'cash';
+        $this->status = 'pending';
+    }
 
-    $this->reset([
-        'transaksiId','id_barang','tanggal_transaksi',
-        'jumlah_pembelian','total','harga_beli'
-    ]);
-
-    $this->dispatch('refreshDatatable');
-    $this->open = false;
-}
-
+    public function closeModal()
+    {
+        $this->resetForm();
+        $this->resetErrorBag();
+        $this->open = false;
+    }
 
     public function render()
     {
         return view('livewire.transaksi-pembelian.update', [
-            'listBarang' => Barang::orderBy('nama_barang')->get(),
+            'listSupplier' => Supplier::orderBy('nama_supplier')->get(),
+            'listBarang' => $this->listBarang,
+            'selectedSupplier' => $this->id_supplier ? Supplier::where('id_supplier', $this->id_supplier)->first() : null,
+            'selectedBarang' => $this->id_barang ? Barang::find($this->id_barang) : null,
         ]);
     }
 }
