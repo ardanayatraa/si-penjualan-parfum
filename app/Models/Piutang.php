@@ -20,6 +20,6 @@ class Piutang extends Model
 
     public function penjualan()
     {
-        return $this->belongsTo(\App\Models\TransaksiPenjualan::class, 'id_penjualan', 'id_penjualan');
+        return $this->belongsTo(\App\Models\TransaksiPenjualan::class, 'id_penjualan', 'id');
     }
 }
