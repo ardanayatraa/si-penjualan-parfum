@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\TransaksiPembelian;
 use App\Models\TransaksiPenjualan;
 use App\Models\PajakTransaksi;
+use App\Models\ReturnBarang;
 use Illuminate\Support\Facades\Auth;
 
 class Admin extends Component
@@ -33,12 +34,28 @@ class Admin extends Component
                     'route' => route('supplier'),
                     'color' => 'bg-green-500',
                 ],
+
+                [
+                    'label' => 'Return Barang',
+                    'count' => ReturnBarang::count(),
+                    'route' => route('return-barang'),
+                    'color' => 'bg-rose-500',
+                ],
+                [
+                    'label' => 'Penjualan',
+                    'count' => TransaksiPenjualan::count(),
+                    'route' => route('transaksi-penjualan'),
+                    'color' => 'bg-red-500',
+                ],
+
                 [
                     'label' => 'User',
                     'count' => User::count(),
                     'route' => route('user'),
                     'color' => 'bg-purple-500',
                 ],
+
+
             ];
         } elseif ($level === 'kasir') {
             $this->items = [
