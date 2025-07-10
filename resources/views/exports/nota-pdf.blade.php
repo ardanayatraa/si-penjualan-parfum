@@ -197,12 +197,6 @@
             <span>Rp {{ number_format($transaksi->total_harga, 0, ',', '.') }}</span>
         </div>
 
-        @if ($transaksi->laba_bruto > 0)
-            <div class="total-row" style="font-size: 10px; color: #666;">
-                <span>Laba Bruto:</span>
-                <span>Rp {{ number_format($transaksi->laba_bruto, 0, ',', '.') }}</span>
-            </div>
-        @endif
     </div>
 
     <hr />
