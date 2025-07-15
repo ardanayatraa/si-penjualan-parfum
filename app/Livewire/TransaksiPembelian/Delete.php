@@ -10,16 +10,15 @@ use Illuminate\Support\Facades\DB;
 class Delete extends Component
 {
     public $open = false;
-    public $id;  // tetap pakai properti "id"
+    public $id;
 
-    // listener tidak diubah
     protected $listeners = [
         'delete' => 'confirmDelete',
     ];
 
     public function confirmDelete($id)
     {
-        $this->id   = $id;
+        $this->id = $id;
         $this->open = true;
     }
 
@@ -29,19 +28,15 @@ class Delete extends Component
             // ambil transaksi
             $trans = TransaksiPembelian::findOrFail($this->id);
 
-            // rollback stok
-            if ($trans->barang) {
+            // rollback stok hanya jika status selesai
+            if ($trans->status === 'selesai' && $trans->barang) {
                 $trans->barang->decrement('stok', $trans->jumlah_pembelian);
             }
 
-            // hapus jurnal terkait berdasarkan no_bukti "PBJ-{id}"
-            $noBukti = 'PBJ-' . $trans->id;
-            if ($j = JurnalUmum::where('no_bukti', $noBukti)->first()) {
-                // hapus detail dulu
-                $j->detailJurnal()->delete();
-                // hapus header
-                $j->delete();
-            }
+            // hapus jurnal terkait berdasarkan keterangan
+            // Pattern keterangan: "Pembelian {nama_barang} - Transaksi #{id}"
+            $keteranganPattern = "- Transaksi #{$trans->id}";
+            JurnalUmum::where('keterangan', 'LIKE', '%' . $keteranganPattern . '%')->delete();
 
             // hapus transaksi
             $trans->delete();
@@ -50,6 +45,10 @@ class Delete extends Component
         // reset & refresh
         $this->reset('id');
         $this->dispatch('refreshDatatable');
+        $this->dispatch('show-toast', [
+            'type' => 'success',
+            'message' => 'Transaksi pembelian berhasil dihapus!'
+        ]);
         $this->open = false;
     }
 
