@@ -20,7 +20,7 @@
                     <select id="id_user" wire:model.defer="id_user" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih User --</option>
                         @foreach ($listUser as $u)
-                            <option value="{{ $u->id_user }}">{{ $u->username }}</option>
+                            <option value="{{ $u->id }}">{{ $u->username }}</option>
                         @endforeach
                     </select>
                     @error('id_user')
@@ -64,4 +64,4 @@
             </div>
         </x-slot>
     </x-dialog-modal>
-</div> 
+</div>
