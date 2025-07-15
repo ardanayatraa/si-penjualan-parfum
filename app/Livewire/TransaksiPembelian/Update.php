@@ -44,7 +44,7 @@ class Update extends Component
             'tanggal_transaksi' => 'required|date',
             'jumlah_pembelian'  => 'required|integer|min:1',
             'harga'             => 'required|numeric|min:0',
-            'metode_pembayaran' => 'required|in:cash,transfer,credit,debit_card,e_wallet',
+            'metode_pembayaran' => 'required|in:cash,credit',
             'status'            => 'required|in:pending,selesai,dibatalkan',
         ];
     }

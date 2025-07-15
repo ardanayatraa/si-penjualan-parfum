@@ -40,7 +40,7 @@ class Create extends Component
         return [
             'id_supplier'        => 'required|exists:supplier,id_supplier',
             'tanggal_transaksi'  => 'required|date',
-            'metode_pembayaran'  => 'required|in:cash,transfer,credit,debit_card,e_wallet',
+            'metode_pembayaran'  => 'required|in:cash,credit',
             'status'             => 'required|in:pending,selesai',
             'quantities'         => 'required|array|min:1',
             'quantities.*'       => 'integer|min:1',
