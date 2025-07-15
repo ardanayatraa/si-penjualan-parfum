@@ -17,7 +17,7 @@ class Update extends Component
 
     protected $rules = [
         'id_akun' => 'required|exists:akun,id_akun',
-        'id_user' => 'required|exists:users,id_user',
+        'id_user' => 'required|exists:users,id',
         'tanggal' => 'required|date',
         'jenis_pengeluaran' => 'required|string|max:50',
         'jumlah' => 'required|numeric',
@@ -60,4 +60,4 @@ class Update extends Component
             'listUser' => User::all(),
         ]);
     }
-} 
+}
