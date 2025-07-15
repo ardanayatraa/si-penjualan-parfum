@@ -118,12 +118,12 @@
                         <x-label value="Status Transaksi *" class="font-medium" />
                         <div class="flex gap-4 mt-2">
                             <label class="inline-flex items-center">
-                                <input type="radio" wire:model="status" value="pending"
+                                <input type="radio" wire:model.live="status" value="pending"
                                     class="form-radio text-indigo-600 focus:ring-indigo-500">
                                 <span class="ml-2 text-sm">Draft (Pending)</span>
                             </label>
                             <label class="inline-flex items-center">
-                                <input type="radio" wire:model="status" value="selesai"
+                                <input type="radio" wire:model.live="status" value="selesai"
                                     class="form-radio text-green-600 focus:ring-green-500">
                                 <span class="ml-2 text-sm">Selesaikan Transaksi</span>
                             </label>
