@@ -5,7 +5,7 @@
             <div class="flex flex-col gap-4">
                 <div>
                     <x-label for="id_akun" value="Akun Beban" />
-                    <select id="id_akun" wire:model.defer="id_akun" class="w-full border-gray-300 rounded-md">
+                    <select id="id_akun" wire:model="id_akun" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih Akun --</option>
                         @foreach ($listAkun as $a)
                             <option value="{{ $a->id_akun }}">{{ $a->nama_akun }}</option>
@@ -17,7 +17,7 @@
                 </div>
                 <div>
                     <x-label for="id_user" value="Pencatat" />
-                    <select id="id_user" wire:model.defer="id_user" class="w-full border-gray-300 rounded-md">
+                    <select id="id_user" wire:model="id_user" class="w-full border-gray-300 rounded-md">
                         <option value="">-- Pilih User --</option>
                         @foreach ($listUser as $u)
                             <option value="{{ $u->id }}">{{ $u->username }}</option>
@@ -29,28 +29,28 @@
                 </div>
                 <div>
                     <x-label for="tanggal" value="Tanggal" />
-                    <x-input id="tanggal" type="date" wire:model.defer="tanggal" />
+                    <x-input id="tanggal" type="date" wire:model="tanggal" class="w-full" />
                     @error('tanggal')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
                 <div>
                     <x-label for="jenis_pengeluaran" value="Jenis Pengeluaran" />
-                    <x-input id="jenis_pengeluaran" wire:model.defer="jenis_pengeluaran" />
+                    <x-input id="jenis_pengeluaran" wire:model.defer="jenis_pengeluaran" class="w-full" />
                     @error('jenis_pengeluaran')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
                 <div>
                     <x-label for="jumlah" value="Jumlah" />
-                    <x-input id="jumlah" type="number" wire:model.defer="jumlah" />
+                    <x-input id="jumlah" type="number" wire:model.defer="jumlah" class="w-full" />
                     @error('jumlah')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
                 <div>
                     <x-label for="keterangan" value="Keterangan" />
-                    <x-input id="keterangan" wire:model.defer="keterangan" />
+                    <x-input id="keterangan" wire:model.defer="keterangan" class="w-full" />
                     @error('keterangan')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
