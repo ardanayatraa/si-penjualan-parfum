@@ -31,7 +31,7 @@ class Create extends Component
     // Payment method options
     public $metodePembayaranOptions = [
         'cash' => 'Tunai',
-        'credit' => 'Kredit/Hutang',
+        'qris' => 'Qris',
 
     ];
 
@@ -40,7 +40,7 @@ class Create extends Component
         return [
             'id_supplier'        => 'required|exists:supplier,id_supplier',
             'tanggal_transaksi'  => 'required|date',
-            'metode_pembayaran'  => 'required|in:cash,credit',
+            'metode_pembayaran'  => 'required|in:cash,qris',
             'status'             => 'required|in:pending,selesai',
             'quantities'         => 'required|array|min:1',
             'quantities.*'       => 'integer|min:1',

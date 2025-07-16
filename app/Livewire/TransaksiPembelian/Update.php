@@ -31,7 +31,7 @@ class Update extends Component
     // Payment method options
     public $metodePembayaranOptions = [
         'cash' => 'Tunai',
-        'credit' => 'Kredit/Hutang',
+        'qris' => 'Qris',
     ];
 
     protected $listeners = ['edit' => 'loadData'];
@@ -44,7 +44,7 @@ class Update extends Component
             'tanggal_transaksi' => 'required|date',
             'jumlah_pembelian'  => 'required|integer|min:1',
             'harga'             => 'required|numeric|min:0',
-            'metode_pembayaran' => 'required|in:cash,credit',
+            'metode_pembayaran' => 'required|in:cash,qris',
             'status'            => 'required|in:pending,selesai,dibatalkan',
         ];
     }
