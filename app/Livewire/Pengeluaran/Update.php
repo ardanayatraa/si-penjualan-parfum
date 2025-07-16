@@ -27,7 +27,7 @@ class Update extends Component
     public function edit($id)
     {
         $pengeluaran = Pengeluaran::findOrFail($id);
-        $this->pengeluaran_id = $pengeluaran->id_pengeluaran;
+        $this->pengeluaran_id = $pengeluaran->id_pengeluaran; 
         $this->id_akun = $pengeluaran->id_akun;
         $this->id_user = $pengeluaran->id_user;
            $this->tanggal = $pengeluaran->tanggal->format('Y-m-d'); // Pastikan format Y-m-d

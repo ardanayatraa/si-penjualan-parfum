@@ -243,7 +243,7 @@ class LaporanNeracaTable extends DataTableComponent
             'aset' => $aset,
             'kewajiban' => $kewajiban,
             'totalAset' => $totalAset,
-            'totalKewajiban' => $totalKewajiban,
+            'totalKewajiban' z=> $totalKewajiban,
             'totalDebet' => $totalDebet,
             'totalKredit' => $totalKredit,
             'start' => $start,

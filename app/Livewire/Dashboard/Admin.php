@@ -89,7 +89,7 @@ class Admin extends Component
                 [
                     'label' => 'Grafik Penjualan',
                     'count' => null,
-                    'route' => route('grafik.penjualan'),
+                    'route' => route('grafik.penjualan.index'),
                     'color' => 'bg-indigo-500',
                 ],
 
