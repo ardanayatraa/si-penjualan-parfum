@@ -40,6 +40,13 @@
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
+                <div>
+                    <x-label for="jumlah_dibayarkan" value="Jumlah Dibayarkan" />
+                    <x-input id="jumlah_dibayarkan" type="number" step="0.01" wire:model.defer="jumlah_dibayarkan" />
+                    @error('jumlah_dibayarkan')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                    @enderror
+                </div>
 
                 <div>
                     <x-label for="status" value="Status" />

@@ -12,6 +12,7 @@ class CreatePiutangTable extends Migration
             $table->id('id_piutang');
             $table->unsignedBigInteger('id_penjualan');
             $table->decimal('jumlah', 15, 2);
+            $table->decimal('jumlah_dibayarkan', 15, 2)->default(0);
             $table->string('status', 20);
             $table->timestamps();
 

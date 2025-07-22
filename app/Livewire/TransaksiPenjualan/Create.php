@@ -36,13 +36,14 @@ class Create extends Component
     public $metodePembayaranOptions = [
         'cash' => 'Tunai',
         'qris' => 'Qris',
+        'piutang' => 'Piutang',
     ];
 
     protected $rules = [
         'id_barang'          => 'required|exists:barang,id',
         'jumlah_terjual'     => 'required|integer|min:1',
         'tanggal_transaksi'  => 'required|date',
-        'metode_pembayaran'  => 'required',
+        'metode_pembayaran'  => 'required|in:cash,qris,piutang',
     ];
 
     protected $messages = [
@@ -159,6 +160,18 @@ class Create extends Component
                     'metode_pembayaran'  => $this->metode_pembayaran,
                     'status'             => 'selesai', // Langsung selesai
                 ]);
+
+                // Jika piutang, buat piutang
+                if ($this->metode_pembayaran === 'piutang') {
+                    \App\Models\Piutang::create([
+                        'id_penjualan' => $transaksi->id,
+                        'jumlah' => $this->total_harga,
+                        'jumlah_dibayarkan' => 0,
+                        'status' => 'belum lunas',
+                        'nama_pelanggan' => Auth::user()->name ?? '-',
+                        'no_telp' => Auth::user()->no_telp ?? '-',
+                    ]);
+                }
 
                 // Langsung proses transaksi selesai
                 $this->processCompletedTransaction($transaksi, $barang);

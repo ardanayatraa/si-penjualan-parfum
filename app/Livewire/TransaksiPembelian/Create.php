@@ -32,6 +32,7 @@ class Create extends Component
     public $metodePembayaranOptions = [
         'cash' => 'Tunai',
         'qris' => 'Qris',
+        'hutang' => 'Hutang',
     ];
 
     protected function rules()
@@ -39,7 +40,7 @@ class Create extends Component
         return [
             'id_supplier'        => 'required|exists:supplier,id_supplier',
             'tanggal_transaksi'  => 'required|date',
-            'metode_pembayaran'  => 'required|in:cash,qris',
+            'metode_pembayaran'  => 'required|in:cash,qris,hutang',
             'quantities'         => 'required|array|min:1',
             'quantities.*'       => 'integer|min:1',
             'harga_satuan'       => 'required|array',
@@ -176,6 +177,18 @@ class Create extends Component
                         'metode_pembayaran'  => $this->metode_pembayaran,
                         'status'             => 'selesai', // Langsung selesai
                     ]);
+
+                    // Jika hutang, buat hutang
+                    if ($this->metode_pembayaran === 'hutang') {
+                        \App\Models\Hutang::create([
+                            'id_pembelian' => $transaksi->id,
+                            'id_supplier' => $this->id_supplier,
+                            'jumlah' => $total,
+                            'jumlah_dibayarkan' => 0,
+                            'tgl_tempo' => $this->tanggal_transaksi, // Atur sesuai kebutuhan
+                            'status' => 'belum lunas',
+                        ]);
+                    }
 
                     // Langsung proses transaksi selesai
                     $this->processCompletedTransaction($transaksi, $barang, $quantity, $harga, $total);

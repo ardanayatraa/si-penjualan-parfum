@@ -14,6 +14,7 @@ class Hutang extends Model
         'id_pembelian',
         'id_supplier',
         'jumlah',
+        'jumlah_dibayarkan',
         'tgl_tempo',
         'status',
     ];

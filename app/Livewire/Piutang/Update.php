@@ -10,7 +10,7 @@ class Update extends Component
 {
     public $open = false;
     public $piutang_id;
-    public $id_penjualan, $nama_pelanggan, $no_telp, $jumlah, $status;
+    public $id_penjualan, $nama_pelanggan, $no_telp, $jumlah, $jumlah_dibayarkan, $status;
 
     protected $listeners = ['editPiutang' => 'loadData'];
 
@@ -19,6 +19,7 @@ class Update extends Component
         'nama_pelanggan' => 'required|string|max:50',
         'no_telp'        => 'required|string|max:15',
         'jumlah'         => 'required|numeric|min:0',
+        'jumlah_dibayarkan' => 'required|numeric|min:0',
         'status'         => 'required|string|max:20',
     ];
 
@@ -31,6 +32,7 @@ class Update extends Component
         $this->nama_pelanggan = $data->nama_pelanggan;
         $this->no_telp        = $data->no_telp;
         $this->jumlah         = $data->jumlah;
+        $this->jumlah_dibayarkan = $data->jumlah_dibayarkan;
         $this->status         = $data->status;
         $this->open           = true;
     }
@@ -44,6 +46,7 @@ class Update extends Component
             'nama_pelanggan' => $this->nama_pelanggan,
             'no_telp'        => $this->no_telp,
             'jumlah'         => $this->jumlah,
+            'jumlah_dibayarkan' => $this->jumlah_dibayarkan,
             'status'         => $this->status,
         ]);
 

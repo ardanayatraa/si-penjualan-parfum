@@ -45,6 +45,14 @@
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
+                {{-- Jumlah Dibayarkan --}}
+                <div>
+                    <x-label value="Jumlah Dibayarkan" />
+                    <x-input type="number" wire:model.defer="jumlah_dibayarkan" class="w-full" />
+                    @error('jumlah_dibayarkan')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                    @enderror
+                </div>
 
                 {{-- Tanggal Tempo --}}
                 <div>

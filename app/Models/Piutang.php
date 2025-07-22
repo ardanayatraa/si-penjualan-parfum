@@ -13,6 +13,7 @@ class Piutang extends Model
     protected $fillable = [
         'id_penjualan',
         'jumlah',
+        'jumlah_dibayarkan',
         'status',
         'nama_pelanggan', // Tambahan untuk menyimpan nama pelanggan
         'no_telp',        // Tambahan untuk menyimpan nomor telepon pelanggan
