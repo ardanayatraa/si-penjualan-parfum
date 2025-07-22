@@ -7,6 +7,7 @@ use App\Models\Supplier;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
+use Rappasoft\LaravelLivewireTables\Views\Filters\DateFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -20,29 +21,56 @@ class LaporanStokTable extends DataTableComponent
         $this->setDefaultSort('nama_barang', 'asc');
     }
 
+    public string $startDate = '';
+    public string $endDate = '';
+
     public function builder(): Builder
     {
-        return Barang::query()
-            ->with(['supplier'])
-            // Hitung qty dan nilai dari pembelian (hanya yang selesai)
-            ->withSum(['transaksiPembelians as qty_pembelian' => function($query) {
-                $query->where('status', 'selesai');
+        $query = Barang::query()
+            ->with(['supplier']);
+
+        // Filter pembelian/penjualan berdasarkan tanggal jika diisi
+        $start = $this->startDate ?: null;
+        $end = $this->endDate ?: null;
+
+        $query = $query
+            ->withSum(['transaksiPembelians as qty_pembelian' => function($q) use ($start, $end) {
+                $q->where('status', 'selesai');
+                if ($start) $q->whereDate('tanggal_transaksi', '>=', $start);
+                if ($end) $q->whereDate('tanggal_transaksi', '<=', $end);
             }], 'jumlah_pembelian')
-            ->withSum(['transaksiPembelians as nilai_pembelian' => function($query) {
-                $query->where('status', 'selesai');
+            ->withSum(['transaksiPembelians as nilai_pembelian' => function($q) use ($start, $end) {
+                $q->where('status', 'selesai');
+                if ($start) $q->whereDate('tanggal_transaksi', '>=', $start);
+                if ($end) $q->whereDate('tanggal_transaksi', '<=', $end);
             }], 'total')
-            // Hitung qty dan nilai dari penjualan (hanya yang selesai)
-            ->withSum(['transaksiPenjualans as qty_penjualan' => function($query) {
-                $query->where('status', 'selesai');
-            }], 'jumlah_terjual') // Updated field name
-            ->withSum(['transaksiPenjualans as nilai_penjualan' => function($query) {
-                $query->where('status', 'selesai');
+            ->withSum(['transaksiPenjualans as qty_penjualan' => function($q) use ($start, $end) {
+                $q->where('status', 'selesai');
+                if ($start) $q->whereDate('tanggal_transaksi', '>=', $start);
+                if ($end) $q->whereDate('tanggal_transaksi', '<=', $end);
+            }], 'jumlah_terjual')
+            ->withSum(['transaksiPenjualans as nilai_penjualan' => function($q) use ($start, $end) {
+                $q->where('status', 'selesai');
+                if ($start) $q->whereDate('tanggal_transaksi', '>=', $start);
+                if ($end) $q->whereDate('tanggal_transaksi', '<=', $end);
             }], 'total_harga');
+
+        return $query;
     }
 
     public function filters(): array
     {
         return [
+            DateFilter::make('Tanggal Mulai')
+                ->config(['max' => now()->format('Y-m-d')])
+                ->filter(function($builder, string $value) {
+                    $this->startDate = $value;
+                }),
+            DateFilter::make('Tanggal Akhir')
+                ->config(['max' => now()->format('Y-m-d')])
+                ->filter(function($builder, string $value) {
+                    $this->endDate = $value;
+                }),
             SelectFilter::make('Supplier')
                 ->options([
                     '' => 'Semua Supplier',
