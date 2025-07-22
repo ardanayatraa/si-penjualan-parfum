@@ -42,11 +42,6 @@
                             <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
                         @enderror
 
-                        {{-- Debug Info --}}
-                        <div class="text-xs text-gray-400 mt-1">
-                            Selected ID: {{ $id_supplier ?? 'null' }}
-                        </div>
-
                         {{-- Selected Supplier Info --}}
                         @if ($selectedSupplier)
                             <div class="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
@@ -86,30 +81,20 @@
                         </div>
                     </div>
 
-                    {{-- Status --}}
-                    <div>
-                        <x-label value="Status Transaksi *" class="font-medium" />
-                        <div class="flex gap-4 mt-2">
-                            <label class="inline-flex items-center">
-                                <input type="radio" wire:model="status" value="pending"
-                                    class="form-radio text-yellow-600 focus:ring-yellow-500">
-                                <span class="ml-2 text-sm">Draft (Pending)</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input type="radio" wire:model="status" value="selesai"
-                                    class="form-radio text-green-600 focus:ring-green-500">
-                                <span class="ml-2 text-sm">Selesaikan Pembelian</span>
-                            </label>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1">
-                            @if ($status === 'pending')
-                                Draft: Transaksi disimpan tanpa menambah stok
-                            @else
-                                Selesai: Stok barang akan ditambah dan jurnal dibuat
-                            @endif
+                    {{-- Info Notice --}}
+                    <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                        <div class="flex">
+                            <svg class="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="text-sm text-blue-800">
+                                <strong>Info:</strong> Transaksi akan langsung diselesaikan. Stok barang akan bertambah
+                                dan jurnal akuntansi akan dibuat otomatis.
+                            </div>
                         </div>
                     </div>
-
 
                     {{-- Product List --}}
                     @if ($id_supplier)
@@ -178,10 +163,6 @@
                                                                     stroke-width="2" d="M12 4v16m8-8H4"></path>
                                                             </svg>
                                                         </button>
-                                                    </div>
-                                                    {{-- Debug info --}}
-                                                    <div class="text-xs text-gray-400 mt-1">
-                                                        Qty: {{ $quantities[$b->id] ?? 'null' }}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -273,7 +254,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
                             </path>
                         </svg>
-                        {{ $status === 'selesai' ? 'Simpan & Selesaikan' : 'Simpan Draft' }}
+                        Selesaikan Pembelian
                     </x-button>
                 </div>
             </div>

@@ -21,7 +21,7 @@ class Update extends Component
     public $tanggal_transaksi;
     public $id_pajak;
     public $metode_pembayaran = 'cash';
-    public $status = 'pending';
+    // Hapus status karena langsung selesai
 
     // Calculated fields
     public $harga_jual = 0;
@@ -49,7 +49,6 @@ class Update extends Component
             'jumlah_terjual'     => 'required|integer|min:1',
             'tanggal_transaksi'  => 'required|date',
             'metode_pembayaran'  => 'required',
-            'status'             => 'required|in:pending,selesai,dibatalkan',
         ];
     }
 
@@ -59,7 +58,6 @@ class Update extends Component
         'jumlah_terjual.min'         => 'Jumlah penjualan minimal 1.',
         'tanggal_transaksi.required' => 'Tanggal transaksi harus diisi.',
         'metode_pembayaran.required' => 'Metode pembayaran harus dipilih.',
-        'status.required'            => 'Status harus dipilih.',
     ];
 
     public function loadData($id)
@@ -84,7 +82,7 @@ class Update extends Component
         $this->tanggal_transaksi = $transaksi->tanggal_transaksi->format('Y-m-d');
         $this->id_pajak = $transaksi->id_pajak;
         $this->metode_pembayaran = $transaksi->metode_pembayaran;
-        $this->status = $transaksi->status;
+        // Tidak set status karena langsung selesai
 
         // Load calculated fields
         $this->subtotal = $transaksi->subtotal;
@@ -196,13 +194,12 @@ class Update extends Component
                     throw new \Exception('Transaksi tidak ditemukan');
                 }
 
-                $oldStatus = $transaksi->status;
-                $newStatus = $this->status;
+                $oldStatus = $this->originalData['status'];
 
-                // Handle stock changes
-                $this->handleStockChanges($transaksi);
+                // Handle stock changes - kembalikan stok lama
+                $this->revertOldStock($transaksi);
 
-                // Update transaksi
+                // Update transaksi dengan status selesai
                 $transaksi->update([
                     'id_barang'          => $this->id_barang,
                     'id_pajak'           => $this->id_pajak,
@@ -213,18 +210,21 @@ class Update extends Component
                     'laba_bruto'         => $this->laba_bruto,
                     'total_harga'        => $this->total_harga,
                     'metode_pembayaran'  => $this->metode_pembayaran,
-                    'status'             => $this->status,
+                    'status'             => 'selesai', // Langsung selesai
                 ]);
 
-                // Handle journal entries based on status change
-                $this->handleJournalEntries($transaksi, $oldStatus, $newStatus);
+                // Langsung proses transaksi baru sebagai selesai
+                $this->processCompletedTransaction($transaksi);
+
+                // Handle journal entries
+                $this->handleJournalEntries($transaksi, $oldStatus);
             });
 
             $this->resetForm();
             $this->dispatch('refreshDatatable');
             $this->dispatch('show-toast', [
                 'type' => 'success',
-                'message' => 'Transaksi berhasil diupdate!'
+                'message' => 'Transaksi penjualan berhasil diupdate dan diselesaikan!'
             ]);
             $this->open = false;
 
@@ -233,7 +233,7 @@ class Update extends Component
         }
     }
 
-    private function handleStockChanges($transaksi)
+    private function revertOldStock($transaksi)
     {
         $oldBarangId = $this->originalData['id_barang'];
         $oldJumlah = $this->originalData['jumlah_terjual'];
@@ -246,30 +246,29 @@ class Update extends Component
                 $oldBarang->increment('stok', $oldJumlah);
             }
         }
+    }
 
-        // Jika transaksi baru statusnya selesai, kurangi stok
-        if ($this->status === 'selesai') {
-            $newBarang = Barang::find($this->id_barang);
-            if ($newBarang) {
-                if ($newBarang->stok < $this->jumlah_terjual) {
-                    throw new \Exception("Stok {$newBarang->nama_barang} tidak mencukupi.");
-                }
-                $newBarang->decrement('stok', $this->jumlah_terjual);
+    private function processCompletedTransaction($transaksi)
+    {
+        // Kurangi stok barang baru
+        $newBarang = Barang::find($this->id_barang);
+        if ($newBarang) {
+            if ($newBarang->stok < $this->jumlah_terjual) {
+                throw new \Exception("Stok {$newBarang->nama_barang} tidak mencukupi.");
             }
+            $newBarang->decrement('stok', $this->jumlah_terjual);
         }
     }
 
-    private function handleJournalEntries($transaksi, $oldStatus, $newStatus)
+    private function handleJournalEntries($transaksi, $oldStatus)
     {
         // Hapus jurnal lama jika ada
         if ($oldStatus === 'selesai') {
             $this->deleteOldJournalEntries($transaksi);
         }
 
-        // Buat jurnal baru jika status selesai
-        if ($newStatus === 'selesai') {
-            $this->createNewJournalEntries($transaksi);
-        }
+        // Buat jurnal baru karena selalu selesai
+        $this->createNewJournalEntries($transaksi);
     }
 
     private function deleteOldJournalEntries($transaksi)
@@ -317,7 +316,7 @@ class Update extends Component
     {
         $this->reset([
             'id_transaksi', 'id_barang', 'jumlah_terjual',
-            'tanggal_transaksi', 'id_pajak', 'metode_pembayaran', 'status',
+            'tanggal_transaksi', 'id_pajak', 'metode_pembayaran',
             'harga_jual', 'harga_pokok', 'subtotal', 'pajak_amount',
             'total_harga', 'laba_bruto', 'originalData'
         ]);

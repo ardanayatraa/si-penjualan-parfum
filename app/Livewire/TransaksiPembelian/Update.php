@@ -23,7 +23,7 @@ class Update extends Component
     public $harga; // Harga per unit
     public $total;
     public $metode_pembayaran = 'cash';
-    public $status = 'pending';
+    // Hapus status karena langsung selesai
 
     // Original data untuk tracking perubahan
     public $originalData = [];
@@ -45,7 +45,6 @@ class Update extends Component
             'jumlah_pembelian'  => 'required|integer|min:1',
             'harga'             => 'required|numeric|min:0',
             'metode_pembayaran' => 'required|in:cash,qris',
-            'status'            => 'required|in:pending,selesai,dibatalkan',
         ];
     }
 
@@ -79,7 +78,7 @@ class Update extends Component
         $this->harga = $transaksi->harga;
         $this->total = $transaksi->total;
         $this->metode_pembayaran = $transaksi->metode_pembayaran;
-        $this->status = $transaksi->status;
+        // Tidak set status karena langsung selesai
 
         $this->open = true;
     }
@@ -128,12 +127,11 @@ class Update extends Component
                 $transaksi = TransaksiPembelian::findOrFail($this->transaksiId);
 
                 $oldStatus = $this->originalData['status'];
-                $newStatus = $this->status;
 
-                // Handle stock changes
-                $this->handleStockChanges($transaksi);
+                // Handle stock changes - kembalikan stok lama
+                $this->revertOldStock($transaksi);
 
-                // Update transaksi pembelian
+                // Update transaksi pembelian dengan status selesai
                 $transaksi->update([
                     'id_barang'         => $this->id_barang,
                     'id_supplier'       => $this->id_supplier,
@@ -142,18 +140,21 @@ class Update extends Component
                     'harga'             => $this->harga,
                     'total'             => $this->total,
                     'metode_pembayaran' => $this->metode_pembayaran,
-                    'status'            => $this->status,
+                    'status'            => 'selesai', // Langsung selesai
                 ]);
 
-                // Handle journal entries based on status change
-                $this->handleJournalEntries($transaksi, $oldStatus, $newStatus);
+                // Langsung proses transaksi baru sebagai selesai
+                $this->processCompletedTransaction($transaksi);
+
+                // Handle journal entries
+                $this->handleJournalEntries($transaksi, $oldStatus);
             });
 
             $this->resetForm();
             $this->dispatch('refreshDatatable');
             $this->dispatch('show-toast', [
                 'type' => 'success',
-                'message' => 'Transaksi pembelian berhasil diupdate!'
+                'message' => 'Transaksi pembelian berhasil diupdate dan diselesaikan!'
             ]);
             $this->open = false;
 
@@ -162,7 +163,7 @@ class Update extends Component
         }
     }
 
-    private function handleStockChanges($transaksi)
+    private function revertOldStock($transaksi)
     {
         $oldBarangId = $this->originalData['id_barang'];
         $oldJumlah = $this->originalData['jumlah_pembelian'];
@@ -175,29 +176,28 @@ class Update extends Component
                 $oldBarang->decrement('stok', $oldJumlah);
             }
         }
+    }
 
-        // Jika transaksi baru statusnya selesai, tambah stok
-        if ($this->status === 'selesai') {
-            $newBarang = Barang::find($this->id_barang);
-            if ($newBarang) {
-                $newBarang->increment('stok', $this->jumlah_pembelian);
-                // Update harga beli barang dengan harga terbaru
-                $newBarang->update(['harga_beli' => $this->harga]);
-            }
+    private function processCompletedTransaction($transaksi)
+    {
+        // Tambah stok barang baru
+        $newBarang = Barang::find($this->id_barang);
+        if ($newBarang) {
+            $newBarang->increment('stok', $this->jumlah_pembelian);
+            // Update harga beli barang dengan harga terbaru
+            $newBarang->update(['harga_beli' => $this->harga]);
         }
     }
 
-    private function handleJournalEntries($transaksi, $oldStatus, $newStatus)
+    private function handleJournalEntries($transaksi, $oldStatus)
     {
         // Hapus jurnal lama jika ada
         if ($oldStatus === 'selesai') {
             $this->deleteOldJournalEntries($transaksi);
         }
 
-        // Buat jurnal baru jika status selesai
-        if ($newStatus === 'selesai') {
-            $this->createNewJournalEntries($transaksi);
-        }
+        // Buat jurnal baru karena selalu selesai
+        $this->createNewJournalEntries($transaksi);
     }
 
     private function deleteOldJournalEntries($transaksi)
@@ -284,7 +284,7 @@ class Update extends Component
             'jumlah_pembelian', 'harga', 'total', 'originalData'
         ]);
         $this->metode_pembayaran = 'cash';
-        $this->status = 'pending';
+        // Hapus reset status
     }
 
     public function closeModal()

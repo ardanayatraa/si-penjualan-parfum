@@ -27,6 +27,21 @@
                         </div>
                     @enderror
 
+                    {{-- Info Notice --}}
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-md p-3">
+                        <div class="flex">
+                            <svg class="w-5 h-5 text-indigo-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="text-sm text-indigo-800">
+                                <strong>Info:</strong> Transaksi akan langsung diselesaikan. Stok barang akan berkurang
+                                dan jurnal akuntansi akan dibuat otomatis.
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Pilih Barang --}}
                     <div>
                         <x-label for="id_barang" value="Barang *" class="font-medium" />
@@ -113,30 +128,6 @@
                         </select>
                     </div>
 
-                    {{-- Status Transaksi --}}
-                    <div>
-                        <x-label value="Status Transaksi *" class="font-medium" />
-                        <div class="flex gap-4 mt-2">
-                            <label class="inline-flex items-center">
-                                <input type="radio" wire:model.live="status" value="pending"
-                                    class="form-radio text-indigo-600 focus:ring-indigo-500">
-                                <span class="ml-2 text-sm">Draft (Pending)</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input type="radio" wire:model.live="status" value="selesai"
-                                    class="form-radio text-green-600 focus:ring-green-500">
-                                <span class="ml-2 text-sm">Selesaikan Transaksi</span>
-                            </label>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1">
-                            @if ($status === 'pending')
-                                Draft: Transaksi disimpan tanpa mengurangi stok
-                            @else
-                                Selesai: Stok barang akan dikurangi dan jurnal dibuat
-                            @endif
-                        </div>
-                    </div>
-
                     {{-- Hasil Perhitungan --}}
                     @if ($subtotal > 0)
                         <div class="bg-gray-50 p-4 rounded-lg border">
@@ -183,13 +174,13 @@
                         <x-button wire:click="closeModal" class="bg-gray-500 hover:bg-gray-600 text-white">
                             Batal
                         </x-button>
-                        <x-button wire:click="store" class="bg-blue-600 hover:bg-blue-700 text-white"
+                        <x-button wire:click="store" class="bg-indigo-600 hover:bg-indigo-700 text-white"
                             :disabled="!$subtotal">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M5 13l4 4L19 7"></path>
                             </svg>
-                            {{ $status === 'selesai' ? 'Simpan & Selesaikan' : 'Simpan Draft' }}
+                            Selesaikan Penjualan
                         </x-button>
                     </div>
                 </div>
@@ -208,7 +199,7 @@
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                         </path>
                     </svg>
-                    Menyimpan transaksi...
+                    Menyimpan transaksi penjualan...
                 </div>
             </div>
         </div>

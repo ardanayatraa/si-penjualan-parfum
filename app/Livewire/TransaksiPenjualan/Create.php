@@ -22,7 +22,7 @@ class Create extends Component
     public $tanggal_transaksi;
     public $id_pajak;
     public $metode_pembayaran = 'cash';
-    public $status = 'pending';
+    // Hapus status karena langsung selesai
 
     // Calculated fields
     public $harga_jual = 0;
@@ -43,7 +43,6 @@ class Create extends Component
         'jumlah_terjual'     => 'required|integer|min:1',
         'tanggal_transaksi'  => 'required|date',
         'metode_pembayaran'  => 'required',
-        'status'             => 'required|in:pending,selesai,dibatalkan',
     ];
 
     protected $messages = [
@@ -114,18 +113,13 @@ class Create extends Component
 
         // Hitung pajak
         if ($pajak = PajakTransaksi::find($this->id_pajak)) {
-
-
             $this->pajak_amount = round(($this->subtotal * $pajak->presentase) / 100, 2);
-
         } else {
             $this->pajak_amount = 0;
         }
 
         // Hitung total harga
         $this->total_harga = $this->subtotal + $this->pajak_amount;
-
-
 
         // Hitung laba bruto
         if ($this->harga_pokok) {
@@ -151,7 +145,7 @@ class Create extends Component
 
         try {
             DB::transaction(function () use ($barang) {
-                // Create transaksi penjualan
+                // Create transaksi penjualan langsung dengan status selesai
                 $transaksi = TransaksiPenjualan::create([
                     'id_kasir'           => Auth::id(),
                     'id_barang'          => $this->id_barang,
@@ -163,20 +157,18 @@ class Create extends Component
                     'laba_bruto'         => $this->laba_bruto,
                     'total_harga'        => $this->total_harga,
                     'metode_pembayaran'  => $this->metode_pembayaran,
-                    'status'             => $this->status,
+                    'status'             => 'selesai', // Langsung selesai
                 ]);
 
-                // Jika status selesai, update stok dan buat jurnal
-                if ($this->status === 'selesai') {
-                    $this->processCompletedTransaction($transaksi, $barang);
-                }
+                // Langsung proses transaksi selesai
+                $this->processCompletedTransaction($transaksi, $barang);
             });
 
             $this->resetForm();
             $this->dispatch('refreshDatatable');
             $this->dispatch('show-toast', [
                 'type' => 'success',
-                'message' => 'Transaksi penjualan berhasil disimpan!'
+                'message' => 'Transaksi penjualan berhasil diselesaikan!'
             ]);
             $this->open = false;
 
@@ -230,16 +222,6 @@ class Create extends Component
         ]);
     }
 
-    public function setStatusSelesai()
-    {
-        $this->status = 'selesai';
-    }
-
-    public function setStatusPending()
-    {
-        $this->status = 'pending';
-    }
-
     private function resetForm()
     {
         $this->reset([
@@ -255,7 +237,7 @@ class Create extends Component
 
         $this->jumlah_terjual = 1;
         $this->metode_pembayaran = 'cash';
-        $this->status = 'pending';
+        // Hapus reset status
         $this->tanggal_transaksi = Carbon::now()->toDateString();
     }
 

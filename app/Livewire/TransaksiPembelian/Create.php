@@ -19,7 +19,7 @@ class Create extends Component
     public $id_supplier;
     public $tanggal_transaksi;
     public $metode_pembayaran = 'cash';
-    public $status = 'pending';
+    // Hapus property status karena langsung selesai
 
     // Shopping cart
     public $quantities = [];
@@ -32,7 +32,6 @@ class Create extends Component
     public $metodePembayaranOptions = [
         'cash' => 'Tunai',
         'qris' => 'Qris',
-
     ];
 
     protected function rules()
@@ -41,7 +40,6 @@ class Create extends Component
             'id_supplier'        => 'required|exists:supplier,id_supplier',
             'tanggal_transaksi'  => 'required|date',
             'metode_pembayaran'  => 'required|in:cash,qris',
-            'status'             => 'required|in:pending,selesai',
             'quantities'         => 'required|array|min:1',
             'quantities.*'       => 'integer|min:1',
             'harga_satuan'       => 'required|array',
@@ -167,7 +165,7 @@ class Create extends Component
                     $harga = $this->harga_satuan[$barangId];
                     $total = $harga * $quantity;
 
-                    // Create transaksi pembelian
+                    // Create transaksi pembelian langsung dengan status selesai
                     $transaksi = TransaksiPembelian::create([
                         'id_barang'          => $barangId,
                         'id_supplier'        => $this->id_supplier,
@@ -176,13 +174,11 @@ class Create extends Component
                         'harga'              => $harga,
                         'total'              => $total,
                         'metode_pembayaran'  => $this->metode_pembayaran,
-                        'status'             => $this->status,
+                        'status'             => 'selesai', // Langsung selesai
                     ]);
 
-                    // Jika status selesai, update stok dan buat jurnal
-                    if ($this->status === 'selesai') {
-                        $this->processCompletedTransaction($transaksi, $barang, $quantity, $harga, $total);
-                    }
+                    // Langsung proses transaksi selesai
+                    $this->processCompletedTransaction($transaksi, $barang, $quantity, $harga, $total);
                 }
             });
 
@@ -190,7 +186,7 @@ class Create extends Component
             $this->dispatch('refreshDatatable');
             $this->dispatch('show-toast', [
                 'type' => 'success',
-                'message' => 'Transaksi pembelian berhasil disimpan!'
+                'message' => 'Transaksi pembelian berhasil diselesaikan!'
             ]);
             $this->open = false;
 
@@ -323,7 +319,7 @@ class Create extends Component
         ]);
         $this->tanggal_transaksi = Carbon::now()->toDateString();
         $this->metode_pembayaran = 'cash';
-        $this->status = 'pending';
+        // Hapus reset status karena tidak ada lagi
     }
 
     public function closeModal()

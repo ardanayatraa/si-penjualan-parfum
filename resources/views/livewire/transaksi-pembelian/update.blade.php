@@ -20,20 +20,20 @@
                     </div>
                 @enderror
 
-                {{-- Status Warning --}}
-                @if ($status === 'selesai')
-                    <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
-                        <div class="flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="font-medium">Peringatan:</span> Transaksi ini akan mempengaruhi stok barang dan
-                            jurnal keuangan.
+                {{-- Info Notice --}}
+                <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        <div class="text-sm text-blue-800">
+                            <strong>Info:</strong> Transaksi akan langsung diselesaikan setelah update. Stok barang lama
+                            akan dikembalikan, stok barang baru akan ditambah, dan jurnal akuntansi akan diperbarui.
                         </div>
                     </div>
-                @endif
+                </div>
 
                 {{-- Supplier Selection --}}
                 <div>
@@ -150,37 +150,6 @@
                     </div>
                 </div>
 
-                {{-- Status Selection --}}
-                <div>
-                    <x-label value="Status Transaksi *" class="font-medium" />
-                    <div class="flex gap-4 mt-2">
-                        <label class="inline-flex items-center">
-                            <input type="radio" wire:model="status" value="pending"
-                                class="form-radio text-yellow-600 focus:ring-yellow-500">
-                            <span class="ml-2 text-sm">Draft (Pending)</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" wire:model="status" value="selesai"
-                                class="form-radio text-green-600 focus:ring-green-500">
-                            <span class="ml-2 text-sm">Selesaikan Pembelian</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" wire:model="status" value="dibatalkan"
-                                class="form-radio text-red-600 focus:ring-red-500">
-                            <span class="ml-2 text-sm">Batalkan</span>
-                        </label>
-                    </div>
-                    <div class="text-xs text-gray-500 mt-1">
-                        @if ($status === 'pending')
-                            Draft: Transaksi disimpan tanpa menambah stok
-                        @elseif($status === 'selesai')
-                            Selesai: Stok barang akan ditambah dan jurnal dibuat
-                        @else
-                            Dibatalkan: Transaksi tidak aktif
-                        @endif
-                    </div>
-                </div>
-
                 {{-- Summary Card --}}
                 @if ($total > 0)
                     <div class="bg-gray-50 p-4 rounded-lg border">
@@ -232,7 +201,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                         </svg>
-                        Update Transaksi
+                        Update & Selesaikan
                     </x-button>
                 </div>
             </div>
