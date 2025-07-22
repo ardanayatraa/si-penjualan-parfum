@@ -37,6 +37,8 @@ class Create extends Component
         'tanggal_return.date'     => 'Format tanggal tidak valid.',
     ];
 
+    protected $listeners = ['returnFromPenjualan' => 'prefillFromPenjualan'];
+
     public function mount()
     {
         $this->tanggal_return = Carbon::now()->toDateString();
@@ -181,6 +183,14 @@ class Create extends Component
     {
         $this->resetForm();
         $this->open = false;
+    }
+
+    public function prefillFromPenjualan($data)
+    {
+        $this->id_barang = $data['id_barang'] ?? null;
+        $this->jumlah = 1;
+        $this->tanggal_return = Carbon::now()->toDateString();
+        $this->open = true;
     }
 
     public function render()

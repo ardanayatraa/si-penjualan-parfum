@@ -120,8 +120,9 @@ class TransaksiPenjualanTable extends DataTableComponent
                 ,
 
             Column::make('Aksi', 'id')
-                ->label(fn($row) => view('components.link-action', [
+                ->label(fn($row) => view('components.link-action-penjualan', [
                     'id'           => $row->id,
+                    'row'          => $row,
                     'editEvent'    => 'edit',
                     'deleteEvent'  => 'delete',
                 ]))
