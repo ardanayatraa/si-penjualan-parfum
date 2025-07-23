@@ -119,14 +119,19 @@ class CreateReturn extends Component
                 // 1. Buat record return barang
                 $return = ReturnBarang::create([
                     'id_barang'      => $this->id_barang,
+                    'id_supplier'    => $barang->id_supplier, // ambil dari relasi barang
                     'jumlah'         => $this->jumlah,
-                    'id_supplier'    => $barang->id_supplier,
                     'alasan'         => $this->alasan,
                     'tanggal_return' => $this->tanggal_return,
                 ]);
 
                 // 2. Kurangi stok barang
+                $stokSebelum = $barang->stok;
                 $barang->decrement('stok', $this->jumlah);
+                $barang->refresh(); // refresh untuk get data terbaru
+
+                // Log untuk debugging (bisa dihapus nanti)
+                \Log::info("Return Barang - Stok sebelum: {$stokSebelum}, setelah: {$barang->stok}, dikurangi: {$this->jumlah}");
 
                 // 3. Buat jurnal return
                 $this->buatJurnalReturn($return, $barang);
@@ -141,6 +146,8 @@ class CreateReturn extends Component
             $this->open = false;
 
         } catch (\Exception $e) {
+            \Log::error("Error creating return: " . $e->getMessage());
+            \Log::error("Stack trace: " . $e->getTraceAsString());
             $this->addError('general', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
