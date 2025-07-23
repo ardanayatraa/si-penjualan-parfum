@@ -105,6 +105,15 @@ class TransaksiPenjualanTable extends DataTableComponent
                 ->sortable()
                 ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
 
+            Column::make('Pajak', 'id')
+                ->label(function($row) {
+                    if ($row->pajak) {
+                        $pajakAmount = ($row->subtotal * $row->pajak->presentase) / 100;
+                        return 'Rp ' . number_format($pajakAmount, 0, ',', '.');
+                    }
+                    return 'Rp 0';
+                }),
+
             Column::make('Total Harga', 'total_harga')
                 ->sortable()
                 ->format(fn($value) => 'Rp ' . number_format($value, 0, ',', '.')),
@@ -187,7 +196,7 @@ class TransaksiPenjualanTable extends DataTableComponent
     public function createReturn($id)
     {
         $transaksi = TransaksiPenjualan::with(['barang'])->findOrFail($id);
-        
+
         // Cek apakah sudah pernah direturn (opsional, bisa diimprove)
         $sudahReturn = \App\Models\ReturnBarang::where('id_barang', $transaksi->id_barang)
             ->whereDate('tanggal_return', now()->toDateString())
