@@ -127,11 +127,19 @@ class CreateReturn extends Component
 
                 // 2. Kurangi stok barang
                 $stokSebelum = $barang->stok;
-                $barang->decrement('stok', $this->jumlah);
-                $barang->refresh(); // refresh untuk get data terbaru
+                \Log::info("BEFORE decrement - Barang ID: {$barang->id}, Stok: {$stokSebelum}, Akan dikurangi: {$this->jumlah}");
 
-                // Log untuk debugging (bisa dihapus nanti)
-                \Log::info("Return Barang - Stok sebelum: {$stokSebelum}, setelah: {$barang->stok}, dikurangi: {$this->jumlah}");
+                // Coba metode alternatif jika decrement tidak work
+                $stokBaru = $stokSebelum - $this->jumlah;
+                $barang->update(['stok' => $stokBaru]);
+                $barang->refresh();
+
+                $stokSesudah = $barang->stok;
+                \Log::info("AFTER update - Barang ID: {$barang->id}, Stok: {$stokSesudah}");
+
+                // Double check dengan query langsung ke database
+                $stokDb = \DB::table('barang')->where('id', $barang->id)->value('stok');
+                \Log::info("DIRECT DB query - Barang ID: {$barang->id}, Stok di DB: {$stokDb}");
 
                 // 3. Kurangi jumlah_pembelian di transaksi pembelian (jika dipanggil dari transaksi)
                 if ($this->transaksiId) {
