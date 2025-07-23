@@ -47,10 +47,10 @@ class TransaksiPembelianTable extends DataTableComponent
                 ->format(fn($value) => number_format($value, 2, ',', '.')),
 
             Column::make('Aksi', 'id')
-                ->label(fn($row) => view('components.link-action', [
+                ->label(fn($row) => view('components.link-action-pembelian', [
                     'id'           => $row->id,
+                    'row'          => $row,
                     'editEvent'    => 'edit',
-                    'deleteEvent'  => 'delete',
                 ]))
                 ->html(),
         ];
@@ -64,5 +64,10 @@ class TransaksiPembelianTable extends DataTableComponent
     public function delete($id)
     {
         $this->dispatch('delete', $id);
+    }
+
+    public function createReturn($id)
+    {
+        $this->dispatch('createReturn', $id);
     }
 }

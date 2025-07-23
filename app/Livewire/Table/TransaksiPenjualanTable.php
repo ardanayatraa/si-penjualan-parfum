@@ -185,6 +185,42 @@ class TransaksiPenjualanTable extends DataTableComponent
         );
     }
 
+    public function createReturn($id)
+    {
+        $transaksi = TransaksiPenjualan::with(['barang'])->findOrFail($id);
+        
+        // Cek apakah sudah pernah direturn (opsional, bisa diimprove)
+        $sudahReturn = \App\Models\ReturnBarang::where('id_barang', $transaksi->id_barang)
+            ->whereDate('tanggal_return', now()->toDateString())
+            ->exists();
+        if ($sudahReturn) {
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Barang dari transaksi ini sudah direturn hari ini!'
+            ]);
+            return;
+        }
+
+        // Buat return barang otomatis
+        $return = \App\Models\ReturnBarang::create([
+            'id_barang' => $transaksi->id_barang,
+            'id_supplier' => $transaksi->barang->id_supplier ?? null,
+            'jumlah' => $transaksi->jumlah_terjual,
+            'alasan' => 'Return otomatis dari penjualan',
+            'tanggal_return' => now(),
+        ]);
+
+        // Tambah stok barang kembali
+        if ($transaksi->barang) {
+            $transaksi->barang->increment('stok', $transaksi->jumlah_terjual);
+        }
+
+        $this->dispatch('show-toast', [
+            'type' => 'success',
+            'message' => 'Return barang berhasil dibuat!'
+        ]);
+    }
+
     public function bulkActions(): array
     {
         return [

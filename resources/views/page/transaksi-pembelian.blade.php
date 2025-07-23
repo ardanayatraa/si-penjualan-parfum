@@ -11,6 +11,7 @@
 
             <!-- Table Wrapper: biar scrollable di HP -->
             <div class="overflow-x-auto">
+                <livewire:return-barang.create-return />
                 @livewire('table.transaksi-pembelian-table')
             </div>
         </div>
@@ -19,4 +20,5 @@
     <!-- Modal Update & Delete -->
     @livewire('transaksi-pembelian.update')
     @livewire('transaksi-pembelian.delete')
+
 </x-app-layout>
