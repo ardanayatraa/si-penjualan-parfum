@@ -30,7 +30,7 @@ class ReturnBarang extends Model
         return $this->belongsTo(Supplier::class, 'id_supplier');
     }
 
-    public function transaksiPembelian()
+    public function transaksi()
 {
     return $this->belongsTo(TransaksiPembelian::class, 'id_transaksi_pembelian');
 }
