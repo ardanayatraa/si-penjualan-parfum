@@ -15,13 +15,12 @@ class Update extends Component
     public $open = false;
     public $id_transaksi;
 
-    // Form fields - sesuai dengan model baru
+    // Form fields
     public $id_barang;
     public $jumlah_terjual = 1;
     public $tanggal_transaksi;
     public $id_pajak;
     public $metode_pembayaran = 'cash';
-    // Hapus status karena langsung selesai
 
     // Calculated fields
     public $harga_jual = 0;
@@ -38,6 +37,7 @@ class Update extends Component
     public $metodePembayaranOptions = [
         'cash' => 'Tunai',
         'qris' => 'Qris',
+        'piutang' => 'Piutang',
     ];
 
     protected $listeners = ['edit' => 'loadData'];
@@ -48,7 +48,7 @@ class Update extends Component
             'id_barang'          => 'required|exists:barang,id',
             'jumlah_terjual'     => 'required|integer|min:1',
             'tanggal_transaksi'  => 'required|date',
-            'metode_pembayaran'  => 'required',
+            'metode_pembayaran'  => 'required|in:cash,qris,piutang',
         ];
     }
 
@@ -73,6 +73,8 @@ class Update extends Component
             'id_barang' => $transaksi->id_barang,
             'jumlah_terjual' => $transaksi->jumlah_terjual,
             'status' => $transaksi->status,
+            'harga_pokok' => $transaksi->harga_pokok,
+            'subtotal' => $transaksi->subtotal,
         ];
 
         // Load data ke form
@@ -82,7 +84,6 @@ class Update extends Component
         $this->tanggal_transaksi = $transaksi->tanggal_transaksi->format('Y-m-d');
         $this->id_pajak = $transaksi->id_pajak;
         $this->metode_pembayaran = $transaksi->metode_pembayaran;
-        // Tidak set status karena langsung selesai
 
         // Load calculated fields
         $this->subtotal = $transaksi->subtotal;
@@ -196,10 +197,15 @@ class Update extends Component
 
                 $oldStatus = $this->originalData['status'];
 
-                // Handle stock changes - kembalikan stok lama
+                // 1. Handle stock changes - kembalikan stok lama
                 $this->revertOldStock($transaksi);
 
-                // Update transaksi dengan status selesai
+                // 2. Handle journal - hapus jurnal lama
+                if ($oldStatus === 'selesai') {
+                    $this->deleteOldJournalEntries($transaksi);
+                }
+
+                // 3. Update transaksi dengan status selesai
                 $transaksi->update([
                     'id_barang'          => $this->id_barang,
                     'id_pajak'           => $this->id_pajak,
@@ -210,21 +216,21 @@ class Update extends Component
                     'laba_bruto'         => $this->laba_bruto,
                     'total_harga'        => $this->total_harga,
                     'metode_pembayaran'  => $this->metode_pembayaran,
-                    'status'             => 'selesai', // Langsung selesai
+                    'status'             => 'selesai',
                 ]);
 
-                // Langsung proses transaksi baru sebagai selesai
+                // 4. Proses transaksi baru sebagai selesai
                 $this->processCompletedTransaction($transaksi);
 
-                // Handle journal entries
-                $this->handleJournalEntries($transaksi, $oldStatus);
+                // 5. Buat jurnal baru lengkap
+                $this->createNewJournalEntries($transaksi);
             });
 
             $this->resetForm();
             $this->dispatch('refreshDatatable');
             $this->dispatch('show-toast', [
                 'type' => 'success',
-                'message' => 'Transaksi penjualan berhasil diupdate dan diselesaikan!'
+                'message' => 'Transaksi penjualan berhasil diupdate!'
             ]);
             $this->open = false;
 
@@ -244,6 +250,7 @@ class Update extends Component
             $oldBarang = Barang::find($oldBarangId);
             if ($oldBarang) {
                 $oldBarang->increment('stok', $oldJumlah);
+                \Log::info("Update Penjualan - Kembalikan stok lama: Barang ID {$oldBarangId}, +{$oldJumlah}");
             }
         }
     }
@@ -257,59 +264,90 @@ class Update extends Component
                 throw new \Exception("Stok {$newBarang->nama_barang} tidak mencukupi.");
             }
             $newBarang->decrement('stok', $this->jumlah_terjual);
+            \Log::info("Update Penjualan - Kurangi stok baru: Barang ID {$this->id_barang}, -{$this->jumlah_terjual}");
         }
-    }
-
-    private function handleJournalEntries($transaksi, $oldStatus)
-    {
-        // Hapus jurnal lama jika ada
-        if ($oldStatus === 'selesai') {
-            $this->deleteOldJournalEntries($transaksi);
-        }
-
-        // Buat jurnal baru karena selalu selesai
-        $this->createNewJournalEntries($transaksi);
     }
 
     private function deleteOldJournalEntries($transaksi)
     {
-        JurnalUmum::where('keterangan', 'LIKE', "%Transaksi #{$transaksi->id}%")->delete();
+        $deletedCount = JurnalUmum::where('keterangan', 'LIKE', "%Transaksi #{$transaksi->id}%")->delete();
+        \Log::info("Update Penjualan - Deleted {$deletedCount} old journal entries for Transaksi #{$transaksi->id}");
     }
 
     private function createNewJournalEntries($transaksi)
     {
         // Cari akun yang diperlukan
-        $akunKas = Akun::where('tipe_akun', 'Aset')
-                      ->where('nama_akun', 'LIKE', '%kas%')
-                      ->first();
+        $akunKas = $this->metode_pembayaran === 'piutang' 
+            ? Akun::where('kode_akun', '1.2.01')->first() // Piutang Dagang
+            : Akun::where('kode_akun', '1.1.01')->first(); // Kas
 
-        $akunPenjualan = Akun::where('tipe_akun', 'Pendapatan')
-                            ->where('nama_akun', 'LIKE', '%penjualan%')
-                            ->first();
+        $akunPendapatan = Akun::where('kode_akun', '4.1.01')->first(); // Penjualan Barang
+        $akunHPP = Akun::where('kode_akun', '5.1.03')->first(); // Beban HPP
+        $akunPersediaan = Akun::where('kode_akun', '1.1.05')->first(); // Persediaan Barang
+        $akunPPN = $this->pajak_amount > 0 ? Akun::where('kode_akun', '2.1.02')->first() : null; // PPN Keluaran
 
-        if (!$akunKas || !$akunPenjualan) {
-            throw new \Exception('Akun Kas atau Penjualan belum dikonfigurasi.');
+        // Validasi akun
+        if (!$akunKas || !$akunPendapatan || !$akunHPP || !$akunPersediaan) {
+            throw new \Exception('Akun belum dikonfigurasi lengkap. Silakan hubungi administrator.');
         }
 
-        $keterangan = "Update Penjualan {$transaksi->barang->nama_barang} - Transaksi #{$transaksi->id}";
+        $barang = Barang::find($this->id_barang);
+        $keterangan = "Update Penjualan {$barang->nama_barang} - Qty: {$this->jumlah_terjual} - Transaksi #{$transaksi->id}";
 
-        // Jurnal: Debit Kas
+        // === JURNAL PENDAPATAN ===
+        // Debit: Kas/Piutang (Aset bertambah)
         JurnalUmum::create([
             'id_akun'    => $akunKas->id_akun,
             'tanggal'    => $this->tanggal_transaksi,
-            'debit'      => $this->total_harga,
+            'debit'      => $this->total_harga, // Total termasuk pajak
             'kredit'     => 0,
             'keterangan' => $keterangan,
         ]);
 
-        // Jurnal: Kredit Penjualan
+        // Kredit: Penjualan Barang (Pendapatan bertambah)
         JurnalUmum::create([
-            'id_akun'    => $akunPenjualan->id_akun,
+            'id_akun'    => $akunPendapatan->id_akun,
             'tanggal'    => $this->tanggal_transaksi,
             'debit'      => 0,
-            'kredit'     => $this->total_harga,
+            'kredit'     => $this->subtotal, // Subtotal tanpa pajak
             'keterangan' => $keterangan,
         ]);
+
+        // === JURNAL HPP ===
+        $totalHPP = $this->harga_pokok * $this->jumlah_terjual;
+
+        // Debit: Beban HPP (Beban bertambah)
+        JurnalUmum::create([
+            'id_akun'    => $akunHPP->id_akun,
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => $totalHPP,
+            'kredit'     => 0,
+            'keterangan' => "Update HPP {$barang->nama_barang} - Qty: {$this->jumlah_terjual} - Transaksi #{$transaksi->id}",
+        ]);
+
+        // Kredit: Persediaan (Aset berkurang)
+        JurnalUmum::create([
+            'id_akun'    => $akunPersediaan->id_akun,
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => 0,
+            'kredit'     => $totalHPP,
+            'keterangan' => "Update HPP {$barang->nama_barang} - Qty: {$this->jumlah_terjual} - Transaksi #{$transaksi->id}",
+        ]);
+
+        // === JURNAL PAJAK (jika ada) ===
+        if ($this->pajak_amount > 0 && $akunPPN) {
+            // Kredit: PPN Keluaran (Kewajiban bertambah)
+            JurnalUmum::create([
+                'id_akun'    => $akunPPN->id_akun,
+                'tanggal'    => $this->tanggal_transaksi,
+                'debit'      => 0,
+                'kredit'     => $this->pajak_amount,
+                'keterangan' => "Update PPN Penjualan - Transaksi #{$transaksi->id}",
+            ]);
+        }
+
+        // Log untuk debugging
+        \Log::info("Update Jurnal Penjualan - Transaksi #{$transaksi->id}: Pendapatan: {$this->subtotal}, HPP: {$totalHPP}, Pajak: {$this->pajak_amount}");
     }
 
     private function resetForm()

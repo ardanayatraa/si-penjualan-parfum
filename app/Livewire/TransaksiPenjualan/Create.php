@@ -18,11 +18,10 @@ class Create extends Component
 
     // Form fields
     public $id_barang;
-    public $jumlah_terjual = 1; // Sesuai dengan field di model
+    public $jumlah_terjual = 1;
     public $tanggal_transaksi;
     public $id_pajak;
     public $metode_pembayaran = 'cash';
-    // Hapus status karena langsung selesai
 
     // Calculated fields
     public $harga_jual = 0;
@@ -158,7 +157,7 @@ class Create extends Component
                     'laba_bruto'         => $this->laba_bruto,
                     'total_harga'        => $this->total_harga,
                     'metode_pembayaran'  => $this->metode_pembayaran,
-                    'status'             => 'selesai', // Langsung selesai
+                    'status'             => 'selesai',
                 ]);
 
                 // Jika piutang, buat piutang
@@ -195,44 +194,83 @@ class Create extends Component
         // Update stok barang
         $barang->decrement('stok', $this->jumlah_terjual);
 
-        // Buat jurnal umum
-        $this->createJournalEntries($transaksi);
+        // Buat jurnal umum LENGKAP
+        $this->createJournalEntries($transaksi, $barang);
     }
 
-    private function createJournalEntries($transaksi)
+    private function createJournalEntries($transaksi, $barang)
     {
         // Cari akun yang diperlukan
-        $akunKas = Akun::where('tipe_akun', 'Aset')
-                      ->where('nama_akun', 'LIKE', '%kas%')
-                      ->first();
+        $akunKas = $this->metode_pembayaran === 'piutang' 
+            ? Akun::where('kode_akun', '1.2.01')->first() // Piutang Dagang
+            : Akun::where('kode_akun', '1.1.01')->first(); // Kas
 
-        $akunPenjualan = Akun::where('tipe_akun', 'Pendapatan')
-                            ->where('nama_akun', 'LIKE', '%penjualan%')
-                            ->first();
+        $akunPendapatan = Akun::where('kode_akun', '4.1.01')->first(); // Penjualan Barang
+        $akunHPP = Akun::where('kode_akun', '5.1.03')->first(); // Beban HPP
+        $akunPersediaan = Akun::where('kode_akun', '1.1.05')->first(); // Persediaan Barang
+        $akunPPN = $this->pajak_amount > 0 ? Akun::where('kode_akun', '2.1.02')->first() : null; // PPN Keluaran
 
-        if (!$akunKas || !$akunPenjualan) {
-            throw new \Exception('Akun Kas atau Penjualan belum dikonfigurasi. Silakan hubungi administrator.');
+        // Validasi akun
+        if (!$akunKas || !$akunPendapatan || !$akunHPP || !$akunPersediaan) {
+            throw new \Exception('Akun belum dikonfigurasi lengkap. Silakan hubungi administrator.');
         }
 
-        $keterangan = "Penjualan {$transaksi->barang->nama_barang} - Transaksi #{$transaksi->id}";
+        $keterangan = "Penjualan {$barang->nama_barang} - Qty: {$this->jumlah_terjual} - Transaksi #{$transaksi->id}";
 
-        // Jurnal: Debit Kas (Aset bertambah)
+        // === JURNAL PENDAPATAN ===
+        // Debit: Kas/Piutang (Aset bertambah)
         JurnalUmum::create([
             'id_akun'    => $akunKas->id_akun,
             'tanggal'    => $this->tanggal_transaksi,
-            'debit'      => $this->total_harga,
+            'debit'      => $this->total_harga, // Total termasuk pajak
             'kredit'     => 0,
             'keterangan' => $keterangan,
         ]);
 
-        // Jurnal: Kredit Penjualan (Pendapatan bertambah)
+        // Kredit: Penjualan Barang (Pendapatan bertambah)
         JurnalUmum::create([
-            'id_akun'    => $akunPenjualan->id_akun,
+            'id_akun'    => $akunPendapatan->id_akun,
             'tanggal'    => $this->tanggal_transaksi,
             'debit'      => 0,
-            'kredit'     => $this->total_harga,
+            'kredit'     => $this->subtotal, // Subtotal tanpa pajak
             'keterangan' => $keterangan,
         ]);
+
+        // === JURNAL HPP ===
+        $totalHPP = $this->harga_pokok * $this->jumlah_terjual;
+
+        // Debit: Beban HPP (Beban bertambah)
+        JurnalUmum::create([
+            'id_akun'    => $akunHPP->id_akun,
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => $totalHPP,
+            'kredit'     => 0,
+            'keterangan' => "HPP {$barang->nama_barang} - Qty: {$this->jumlah_terjual} - Transaksi #{$transaksi->id}",
+        ]);
+
+        // Kredit: Persediaan (Aset berkurang)
+        JurnalUmum::create([
+            'id_akun'    => $akunPersediaan->id_akun,
+            'tanggal'    => $this->tanggal_transaksi,
+            'debit'      => 0,
+            'kredit'     => $totalHPP,
+            'keterangan' => "HPP {$barang->nama_barang} - Qty: {$this->jumlah_terjual} - Transaksi #{$transaksi->id}",
+        ]);
+
+        // === JURNAL PAJAK (jika ada) ===
+        if ($this->pajak_amount > 0 && $akunPPN) {
+            // Kredit: PPN Keluaran (Kewajiban bertambah)
+            JurnalUmum::create([
+                'id_akun'    => $akunPPN->id_akun,
+                'tanggal'    => $this->tanggal_transaksi,
+                'debit'      => 0,
+                'kredit'     => $this->pajak_amount,
+                'keterangan' => "PPN Penjualan - Transaksi #{$transaksi->id}",
+            ]);
+        }
+
+        // Log untuk debugging
+        \Log::info("Jurnal Penjualan Created - Transaksi #{$transaksi->id}: Pendapatan: {$this->subtotal}, HPP: {$totalHPP}, Pajak: {$this->pajak_amount}");
     }
 
     private function resetForm()
@@ -250,7 +288,6 @@ class Create extends Component
 
         $this->jumlah_terjual = 1;
         $this->metode_pembayaran = 'cash';
-        // Hapus reset status
         $this->tanggal_transaksi = Carbon::now()->toDateString();
     }
 
