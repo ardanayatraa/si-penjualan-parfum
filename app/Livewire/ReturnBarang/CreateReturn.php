@@ -120,6 +120,7 @@ class CreateReturn extends Component
                 $return = ReturnBarang::create([
                     'id_barang'      => $this->id_barang,
                     'jumlah'         => $this->jumlah,
+                    'id_supplier'    => $barang->id_supplier,
                     'alasan'         => $this->alasan,
                     'tanggal_return' => $this->tanggal_return,
                 ]);
