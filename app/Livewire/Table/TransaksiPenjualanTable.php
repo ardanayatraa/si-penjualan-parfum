@@ -124,7 +124,6 @@ class TransaksiPenjualanTable extends DataTableComponent
                     'id'           => $row->id,
                     'row'          => $row,
                     'editEvent'    => 'edit',
-                    'deleteEvent'  => 'delete',
                 ]))
                 ->html(),
 

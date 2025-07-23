@@ -227,7 +227,19 @@ class Create extends Component
             'keterangan' => $keterangan,
         ]);
 
-        // Kredit: Penjualan Barang (Pendapatan bertambah)
+        // Kredit: Pendapatan (Header) - 4.1.00
+        $akunPendapatanHeader = Akun::where('kode_akun', '4.1.00')->first();
+        if ($akunPendapatanHeader) {
+            JurnalUmum::create([
+                'id_akun'    => $akunPendapatanHeader->id_akun,
+                'tanggal'    => $this->tanggal_transaksi,
+                'debit'      => 0,
+                'kredit'     => $this->subtotal, // Subtotal tanpa pajak
+                'keterangan' => $keterangan,
+            ]);
+        }
+
+        // Kredit: Penjualan Barang (Detail) - 4.1.01
         JurnalUmum::create([
             'id_akun'    => $akunPendapatan->id_akun,
             'tanggal'    => $this->tanggal_transaksi,

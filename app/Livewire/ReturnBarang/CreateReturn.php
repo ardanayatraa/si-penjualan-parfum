@@ -56,15 +56,15 @@ class CreateReturn extends Component
     public function loadFromTransaksi($transaksiId)
     {
         $transaksi = TransaksiPembelian::with('barang')->findOrFail($transaksiId);
-
+        
         $this->transaksiId = $transaksiId;
         $this->id_barang = $transaksi->barang->id;
         $this->jumlah = 1; // default 1, user bisa ubah
         $this->tanggal_return = Carbon::now()->format('Y-m-d');
-
+        
         // Hitung stok tersedia
         $this->availableStok = $transaksi->barang->stok;
-
+        
         $this->open = true;
     }
 
@@ -73,7 +73,7 @@ class CreateReturn extends Component
         if ($value) {
             $barang = Barang::find($value);
             $this->availableStok = $barang ? $barang->stok : 0;
-
+            
             // Reset jumlah jika melebihi stok tersedia
             if ($this->jumlah > $this->availableStok) {
                 $this->jumlah = min($this->jumlah, $this->availableStok);
@@ -128,15 +128,15 @@ class CreateReturn extends Component
                 // 2. Kurangi stok barang
                 $stokSebelum = $barang->stok;
                 \Log::info("BEFORE decrement - Barang ID: {$barang->id}, Stok: {$stokSebelum}, Akan dikurangi: {$this->jumlah}");
-
+                
                 // Coba metode alternatif jika decrement tidak work
                 $stokBaru = $stokSebelum - $this->jumlah;
                 $barang->update(['stok' => $stokBaru]);
                 $barang->refresh();
-
+                
                 $stokSesudah = $barang->stok;
                 \Log::info("AFTER update - Barang ID: {$barang->id}, Stok: {$stokSesudah}");
-
+                
                 // Double check dengan query langsung ke database
                 $stokDb = \DB::table('barang')->where('id', $barang->id)->value('stok');
                 \Log::info("DIRECT DB query - Barang ID: {$barang->id}, Stok di DB: {$stokDb}");
@@ -148,12 +148,12 @@ class CreateReturn extends Component
                         $jumlahSebelum = $transaksi->jumlah_pembelian;
                         $transaksi->decrement('jumlah_pembelian', $this->jumlah);
                         $transaksi->refresh();
-
+                        
                         // Update total transaksi
                         $transaksi->update([
                             'total' => $transaksi->jumlah_pembelian * $transaksi->harga
                         ]);
-
+                        
                         \Log::info("Return Barang - Transaksi ID {$this->transaksiId}: jumlah_pembelian sebelum: {$jumlahSebelum}, setelah: {$transaksi->jumlah_pembelian}");
                     }
                 }
