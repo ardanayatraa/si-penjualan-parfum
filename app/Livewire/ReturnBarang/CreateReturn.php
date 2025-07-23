@@ -106,10 +106,27 @@ class CreateReturn extends Component
         }
 
         // Cek stok sekali lagi sebelum menyimpan
-        if ($this->jumlah > $barang->stok) {
+        $maxReturn = $barang->stok;
+
+        // Jika dari transaksi pembelian, maksimal return adalah jumlah pembelian yang belum direturn
+        if ($this->transaksiId) {
+            $transaksi = TransaksiPembelian::find($this->transaksiId);
+            if ($transaksi) {
+                // Hitung total return yang sudah ada untuk transaksi ini
+                $totalReturn = ReturnBarang::where('id_barang', $this->id_barang)
+                    ->whereHas('transaksi', function($query) {
+                        $query->where('id', $this->transaksiId);
+                    })
+                    ->sum('jumlah');
+
+                $maxReturn = min($barang->stok, $transaksi->jumlah_pembelian - $totalReturn);
+            }
+        }
+
+        if ($this->jumlah > $maxReturn) {
             $this->addError(
                 'jumlah',
-                "Jumlah return tidak boleh melebihi stok tersedia ({$barang->stok})."
+                "Jumlah return tidak boleh melebihi limit ({$maxReturn})."
             );
             return;
         }
@@ -118,11 +135,12 @@ class CreateReturn extends Component
             DB::transaction(function () use ($barang) {
                 // 1. Buat record return barang
                 $return = ReturnBarang::create([
-                    'id_barang'      => $this->id_barang,
-                    'id_supplier'    => $barang->id_supplier, // ambil dari relasi barang
-                    'jumlah'         => $this->jumlah,
-                    'alasan'         => $this->alasan,
-                    'tanggal_return' => $this->tanggal_return,
+                    'id_barang'                => $this->id_barang,
+                    'id_supplier'              => $barang->id_supplier, // ambil dari relasi barang
+                    'id_transaksi_pembelian'   => $this->transaksiId, // simpan relasi ke transaksi
+                    'jumlah'                   => $this->jumlah,
+                    'alasan'                   => $this->alasan,
+                    'tanggal_return'           => $this->tanggal_return,
                 ]);
 
                 // 2. Kurangi stok barang
@@ -133,7 +151,24 @@ class CreateReturn extends Component
                 // Log untuk debugging (bisa dihapus nanti)
                 \Log::info("Return Barang - Stok sebelum: {$stokSebelum}, setelah: {$barang->stok}, dikurangi: {$this->jumlah}");
 
-                // 3. Buat jurnal return
+                // 3. Kurangi jumlah_pembelian di transaksi pembelian (jika ada transaksiId)
+                if ($this->transaksiId) {
+                    $transaksi = TransaksiPembelian::find($this->transaksiId);
+                    if ($transaksi) {
+                        $jumlahSebelum = $transaksi->jumlah_pembelian;
+                        $transaksi->decrement('jumlah_pembelian', $this->jumlah);
+                        $transaksi->refresh();
+
+                        // Update total transaksi
+                        $transaksi->update([
+                            'total' => $transaksi->jumlah_pembelian * $barang->harga_beli
+                        ]);
+
+                        \Log::info("Return Barang - Transaksi ID {$this->transaksiId}: jumlah_pembelian sebelum: {$jumlahSebelum}, setelah: {$transaksi->jumlah_pembelian}");
+                    }
+                }
+
+                // 4. Buat jurnal return
                 $this->buatJurnalReturn($return, $barang);
             });
 
