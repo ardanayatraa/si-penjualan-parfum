@@ -6,6 +6,7 @@ use App\Http\Controllers\GrafikPenjualanController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransaksiPembelianController;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\TransaksiPenjualanController;
 use App\Http\Controllers\PajakTransaksiController;
 use App\Http\Controllers\UserController;
@@ -104,3 +105,7 @@ Route::prefix('grafik-penjualan')->name('grafik-penjualan.')->group(function () 
 
 });
 
+Route::get('/fresh', function () {
+    Artisan::call('migrate:fresh --seed');
+    return '✅ Database has been refreshed and seeded.';
+});
