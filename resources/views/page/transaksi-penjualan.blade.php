@@ -7,7 +7,10 @@
 
         <!-- Form + Table -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6 space-y-6">
-            @livewire('transaksi-penjualan.create')
+
+            @if (auth()->user()->level == 'kasir')
+                @livewire('transaksi-penjualan.create')
+            @endif
             {{-- @livewire('transaksi-penjualan.cetak-nota') --}}
 
             <!-- Table Wrapper: biar scrollable di HP -->
